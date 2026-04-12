@@ -11,8 +11,8 @@ import type {
 } from "@/lib/dashboard-types";
 
 export const macroSignals: MacroSignal[] = [
-  { label: "Brent", value: "$87.10", delta: "+2.4%" },
-  { label: "Gold", value: "$2,384", delta: "+0.9%" },
+  { label: "Brent", value: "87.10", delta: "+2.4%" },
+  { label: "Gold", value: "2,384", delta: "+0.9%" },
   { label: "US 10Y", value: "4.38%", delta: "+11bp" },
   { label: "DXY", value: "104.72", delta: "+0.6%" },
 ];
@@ -96,7 +96,7 @@ export const assetRadar: AssetCard[] = [
     id: "asset-1",
     name: "WTI Crude",
     symbol: "CL1!",
-    price: "$84.62",
+    price: "84.62",
     move: "+1.84%",
     positive: true,
     range: "1D",
@@ -106,7 +106,7 @@ export const assetRadar: AssetCard[] = [
     id: "asset-2",
     name: "Gold Spot",
     symbol: "XAUUSD",
-    price: "$2,384",
+    price: "2,384",
     move: "+0.92%",
     positive: true,
     range: "1D",
