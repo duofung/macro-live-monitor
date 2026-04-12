@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #f8fafc;
+  --muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.1);
+  --panel: rgba(255, 255, 255, 0.04);
+  --panel-strong: rgba(255, 255, 255, 0.06);
+  --accent: #3b82f6;
+  --accent-soft: rgba(59, 130, 246, 0.14);
+  --danger: #f97316;
+  --font-sans:
+    "IBM Plex Sans", "SF Pro Display", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC",
+    sans-serif;
+  --font-mono:
+    "JetBrains Mono", "SFMono-Regular", "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono",
+    monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-panel: var(--panel);
+  --color-panel-strong: var(--panel-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #000;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(71, 85, 105, 0.14), transparent 24%),
+    #000;
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+}
