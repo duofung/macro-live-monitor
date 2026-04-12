@@ -11,10 +11,10 @@ import type {
 } from "@/lib/dashboard-types";
 
 export const macroSignals: MacroSignal[] = [
-  { label: "Brent", value: "87.10", delta: "+2.4%" },
-  { label: "Gold", value: "2,384", delta: "+0.9%" },
-  { label: "US 10Y", value: "4.38%", delta: "+11bp" },
-  { label: "DXY", value: "104.72", delta: "+0.6%" },
+  { label: "布伦特原油", value: "87.10", delta: "+2.4%" },
+  { label: "黄金", value: "2,384", delta: "+0.9%" },
+  { label: "美国10年期国债", value: "4.38%", delta: "+11bp" },
+  { label: "美元指数", value: "104.72", delta: "+0.6%" },
 ];
 
 export const newsFeed: NewsItem[] = [
@@ -22,7 +22,7 @@ export const newsFeed: NewsItem[] = [
     id: "news-1",
     time: "08:42",
     source: "GDELT",
-    category: "Geopolitics",
+    category: "地缘政治",
     impact: "High",
     headline: "中东冲突升级，油运通道风险溢价上升，原油远月曲线继续陡峭化。",
   },
@@ -30,7 +30,7 @@ export const newsFeed: NewsItem[] = [
     id: "news-2",
     time: "08:36",
     source: "GNews",
-    category: "Energy",
+    category: "能源",
     impact: "High",
     headline: "国际油价快速拉升后，航运、航空与化工板块同步进入成本敏感区间。",
   },
@@ -38,7 +38,7 @@ export const newsFeed: NewsItem[] = [
     id: "news-3",
     time: "08:28",
     source: "FRED",
-    category: "Rates",
+    category: "利率",
     impact: "Medium",
     headline: "美债收益率上行压制风险资产估值，实际利率与美元共振偏强。",
   },
@@ -46,7 +46,7 @@ export const newsFeed: NewsItem[] = [
     id: "news-4",
     time: "08:19",
     source: "NewsAPI",
-    category: "Inflation",
+    category: "通胀",
     impact: "High",
     headline: "能源价格冲击重新抬升通胀预期，市场对宽松路径的定价被迫后移。",
   },
@@ -54,7 +54,7 @@ export const newsFeed: NewsItem[] = [
     id: "news-5",
     time: "08:07",
     source: "Yahoo",
-    category: "Cross-Asset",
+    category: "跨资产",
     impact: "Medium",
     headline: "黄金受避险需求支撑，但若美元持续走强，贵金属上行斜率将趋缓。",
   },
@@ -65,28 +65,28 @@ export const causalChain: CausalNode[] = [
     id: "c1",
     title: "地缘冲突",
     description: "原油供应中断预期升温，能源风险溢价先于实体供需收紧反应。",
-    signal: "Shock Origin",
+    signal: "冲击源头",
     tone: "from-blue-500/18 to-transparent",
   },
   {
     id: "c2",
     title: "油价上行",
     description: "原油及成品油价格抬升，运输、制造与居民能源账单同步承压。",
-    signal: "Commodity Transmission",
+    signal: "商品传导",
     tone: "from-slate-500/20 to-transparent",
   },
   {
     id: "c3",
     title: "再通胀交易",
     description: "通胀预期抬升，长端利率和美元偏强，压制全球风险偏好与成长久期。",
-    signal: "Rates / FX",
+    signal: "利率 / 汇率",
     tone: "from-blue-500/18 to-transparent",
   },
   {
     id: "c4",
     title: "资产再定价",
     description: "权益板块轮动，黄金、油气、军工受益；航空、消费与高估值科技承压。",
-    signal: "Portfolio Impact",
+    signal: "组合影响",
     tone: "from-slate-500/20 to-transparent",
   },
 ];
@@ -94,7 +94,7 @@ export const causalChain: CausalNode[] = [
 export const assetRadar: AssetCard[] = [
   {
     id: "asset-1",
-    name: "WTI Crude",
+    name: "WTI原油",
     symbol: "CL1!",
     price: "84.62",
     move: "+1.84%",
@@ -104,7 +104,7 @@ export const assetRadar: AssetCard[] = [
   },
   {
     id: "asset-2",
-    name: "Gold Spot",
+    name: "现货黄金",
     symbol: "XAUUSD",
     price: "2,384",
     move: "+0.92%",
@@ -114,7 +114,7 @@ export const assetRadar: AssetCard[] = [
   },
   {
     id: "asset-3",
-    name: "UST Bond Index",
+    name: "美债指数",
     symbol: "USTB",
     price: "109.41",
     move: "-0.47%",
@@ -151,27 +151,27 @@ export const fallbackThesis =
   "当前主线假设：地缘冲突抬升油价预期，油价抬升强化再通胀交易，再通胀进一步推动利率与美元偏强，最终对全球风险资产形成估值压力。";
 
 export const watchMetrics: WatchMetric[] = [
-  { label: "Brent > 90", value: "临界区间", status: "Watch" },
-  { label: "US 10Y > 4.5%", value: "久期风险", status: "Watch" },
-  { label: "5Y BEI", value: "再通胀抬头", status: "Hot" },
-  { label: "Gold / Oil Ratio", value: "避险未失效", status: "Calm" },
+  { label: "布伦特原油 > 90", value: "临界区间", status: "Watch" },
+  { label: "美国10年期国债 > 4.5%", value: "久期风险", status: "Watch" },
+  { label: "5年通胀预期", value: "再通胀抬头", status: "Hot" },
+  { label: "黄金 / 原油比值", value: "避险未失效", status: "Calm" },
 ];
 
 export const flowSteps: FlowStep[] = [
   {
-    stage: "Event Pulse",
+    stage: "第一步：事件脉冲",
     summary: "中东冲突与航运风险推升能源风险溢价。",
   },
   {
-    stage: "Macro Transmission",
+    stage: "第二步：宏观传导",
     summary: "油价进入通胀预期，压制宽松定价并推动实际利率。",
   },
   {
-    stage: "Cross-Asset Move",
+    stage: "第三步：跨资产反应",
     summary: "美元、长端利率、黄金与能源股出现分化性再定价。",
   },
   {
-    stage: "Portfolio Action",
+    stage: "第四步：组合动作",
     summary: "降低高耗能与长久期暴露，关注能源、军工、贵金属与防御资产。",
   },
 ];

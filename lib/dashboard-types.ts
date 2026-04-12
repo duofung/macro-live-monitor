@@ -7,6 +7,7 @@ export type NewsItem = {
   category: string;
   impact: NewsImpact;
   headline: string;
+  headlineZh?: string;
   url?: string;
 };
 
@@ -70,6 +71,7 @@ export type DashboardPayload = {
   thesis: string;
   macroSignals: MacroSignal[];
   newsFeed: NewsItem[];
+  militaryFeed: NewsItem[];
   causalChain: CausalNode[];
   assetRadar: AssetCard[];
   feedSources: FeedSource[];

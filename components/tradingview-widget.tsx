@@ -1,114 +1,94 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type TradingViewSymbol = {
   label: string;
   symbol: string;
   description: string;
+  layer: string;
 };
 
 const symbols: TradingViewSymbol[] = [
   {
-    label: "Brent",
+    label: "原油",
     symbol: "TVC:UKOIL",
-    description: "观察地缘风险如何快速反映在国际原油价格上。",
+    description: "观察战争风险如何首先抬升国际原油价格。",
+    layer: "大宗商品层",
   },
   {
-    label: "Gold",
+    label: "黄金",
     symbol: "OANDA:XAUUSD",
-    description: "跟踪避险需求与实际利率、美元之间的拉扯。",
+    description: "观察避险需求与利率、美元之间的拉扯。",
+    layer: "贵金属层",
   },
   {
-    label: "US10Y",
+    label: "美债利率",
     symbol: "TVC:US10Y",
-    description: "监测长端利率对通胀与风险偏好的再定价。",
+    description: "观察长端利率如何把战争和通胀冲击传导到估值层。",
+    layer: "利率政策层",
   },
   {
-    label: "DXY",
-    symbol: "TVC:DXY",
-    description: "观察美元强弱对全球资产的压制或缓和作用。",
+    label: "苹果",
+    symbol: "NASDAQ:AAPL",
+    description: "观察大市值科技股在利率冲击下的敏感度。",
+    layer: "股票层",
   },
 ];
 
-declare global {
-  interface Window {
-    TradingView?: {
-      widget?: new (config: Record<string, unknown>) => unknown;
-    };
-  }
-}
-
 export function TradingViewWidget() {
-  const containerId = useId().replace(/:/g, "");
   const [activeSymbol, setActiveSymbol] = useState(symbols[0]);
-  const [isScriptReady, setIsScriptReady] = useState(false);
-
-  useEffect(() => {
-    if (window.TradingView?.widget) {
-      setIsScriptReady(true);
-      return;
-    }
-
-    const existingScript = document.querySelector<HTMLScriptElement>(
-      'script[data-tradingview-script="embed-widget-advanced-chart"]',
-    );
-
-    if (existingScript) {
-      existingScript.addEventListener("load", () => setIsScriptReady(true), { once: true });
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-    script.async = true;
-    script.dataset.tradingviewScript = "embed-widget-advanced-chart";
-    script.onload = () => setIsScriptReady(true);
-    document.body.appendChild(script);
-  }, []);
-
-  useEffect(() => {
-    if (!isScriptReady || !window.TradingView?.widget) {
-      return;
-    }
-
-    const container = document.getElementById(containerId);
-    if (!container) {
-      return;
-    }
-
-    container.innerHTML = "";
-
-    const widgetHost = document.createElement("div");
-    widgetHost.className = "tradingview-widget-container__widget h-full w-full";
-    container.appendChild(widgetHost);
-
-    const copyright = document.createElement("div");
-    copyright.className = "tradingview-widget-copyright";
-    copyright.innerHTML =
-      '<a href="https://www.tradingview.com/widget-docs/widgets/charts/advanced-chart/" rel="noopener nofollow" target="_blank"><span class="text-blue-300">Advanced chart</span></a> <span class="text-slate-500">by TradingView</span>';
-    container.appendChild(copyright);
-
-    new window.TradingView.widget({
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const config = useMemo(
+    () => ({
       autosize: true,
       symbol: activeSymbol.symbol,
       interval: "60",
       timezone: "Asia/Shanghai",
       theme: "dark",
       style: "1",
-      locale: "en",
-      backgroundColor: "#000000",
-      gridColor: "rgba(148, 163, 184, 0.08)",
-      hide_top_toolbar: false,
-      hide_legend: false,
-      allow_symbol_change: false,
+      locale: "zh_CN",
       withdateranges: true,
+      allow_symbol_change: false,
+      hide_side_toolbar: false,
+      hide_top_toolbar: false,
       save_image: false,
+      calendar: false,
+      details: true,
+      hotlist: false,
       studies: ["Volume@tv-basicstudies"],
-      container_id: containerId,
+      backgroundColor: "#000000",
+      gridColor: "rgba(148,163,184,0.08)",
+      watchlist: [],
       support_host: "https://www.tradingview.com",
-    });
-  }, [activeSymbol, containerId, isScriptReady]);
+    }),
+    [activeSymbol.symbol],
+  );
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = "";
+
+    const widgetContainer = document.createElement("div");
+    widgetContainer.className = "tradingview-widget-container h-[420px] w-full";
+
+    const widget = document.createElement("div");
+    widget.className = "tradingview-widget-container__widget h-full w-full";
+
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.async = true;
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.innerHTML = JSON.stringify(config);
+
+    widgetContainer.appendChild(widget);
+    widgetContainer.appendChild(script);
+    container.appendChild(widgetContainer);
+  }, [config]);
 
   return (
     <div className="space-y-4">
@@ -133,10 +113,18 @@ export function TradingViewWidget() {
         })}
       </div>
 
-      <p className="text-sm leading-6 text-slate-400">{activeSymbol.description}</p>
+      <div className="grid gap-3 sm:grid-cols-[0.8fr_1.2fr]">
+        <div className="border border-border bg-black/55 px-4 py-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-slate-500">
+            当前图层
+          </p>
+          <p className="mt-2 font-mono text-lg text-white">{activeSymbol.layer}</p>
+          <p className="mt-3 text-sm leading-7 text-slate-300">{activeSymbol.description}</p>
+        </div>
 
-      <div className="border border-border bg-black/60 p-2">
-        <div id={containerId} className="tradingview-widget-container h-[360px] w-full" />
+        <div className="border border-border bg-black/60 p-2">
+          <div ref={containerRef} className="min-h-[420px] w-full" />
+        </div>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -154,10 +142,14 @@ export function TradingViewWidget() {
                   : "border-border bg-black/55 hover:border-blue-500/30"
               }`}
             >
-              <p className={`font-mono text-[10px] uppercase tracking-[0.24em] ${active ? "text-blue-300" : "text-slate-500"}`}>
+              <p
+                className={`font-mono text-[10px] uppercase tracking-[0.24em] ${
+                  active ? "text-blue-300" : "text-slate-500"
+                }`}
+              >
                 {item.label}
               </p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{item.description}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{item.layer}</p>
             </button>
           );
         })}

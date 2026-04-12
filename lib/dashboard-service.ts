@@ -54,6 +54,19 @@ type GdeltResponse = {
   articles?: GdeltArticle[];
 };
 
+type NewsApiArticle = {
+  title?: string;
+  url?: string;
+  publishedAt?: string;
+  source?: {
+    name?: string;
+  };
+};
+
+type NewsApiResponse = {
+  articles?: NewsApiArticle[];
+};
+
 const SERIES_IDS = {
   oil: "DCOILWTICO",
   gold: "GOLDAMGBD228NLBM",
@@ -115,6 +128,83 @@ function mapImpact(text: string): NewsImpact {
   }
 
   return "Low";
+}
+
+function mapCategoryToChinese(category: string) {
+  const table: Record<string, string> = {
+    "Macro News": "宏观新闻",
+    Geopolitics: "地缘政治",
+    Energy: "能源",
+    Rates: "利率",
+    Inflation: "通胀",
+    "Cross-Asset": "跨资产",
+    Military: "军事动态",
+    Stocks: "股票",
+  };
+
+  return table[category] ?? category;
+}
+
+function translateHeadlineToChinese(headline: string, category: string) {
+  const lower = headline.toLowerCase();
+
+  if (/prabowo|putin|oil talks/.test(lower)) {
+    return "印尼总统将与普京讨论原油合作，显示中东与能源议题正影响更广泛的地缘能源博弈。";
+  }
+
+  if (/iran-us talks|dealbreaker/.test(lower)) {
+    return "伊朗与美国谈判受阻，意味着中东局势缓和难度上升，能源风险溢价短期难以下降。";
+  }
+
+  if (/flight disruptions|airport/.test(lower)) {
+    return "中东局势虽有缓和迹象，但航空运输仍受扰动，说明战争影响还在向民航与旅游链条扩散。";
+  }
+
+  if (/oil|crude|energy/.test(lower)) {
+    return "这条新闻的核心含义是能源价格或供应预期出现变化，通常会先传导到通胀、运输成本和风险偏好。";
+  }
+
+  if (/treasury|yield|bond/.test(lower)) {
+    return "这条新闻反映的是利率或债券市场变化，往往会影响估值、美元强弱以及美联储政策预期。";
+  }
+
+  if (/inflation|cpi|prices/.test(lower)) {
+    return "这条新闻指向通胀压力变化，通胀走高通常意味着宽松预期后移、利率上行、风险资产承压。";
+  }
+
+  if (/gold|safe haven/.test(lower)) {
+    return "这条新闻与黄金或避险需求有关，通常用来判断市场是在交易战争风险，还是在交易利率冲击。";
+  }
+
+  if (/middle east|iran|israel|gaza|red sea|missile|drone|strike|military/.test(lower)) {
+    return "这条新闻指向中东局势或军事行动升级，通常会先影响油价与航运风险，再向通胀和全球风险资产扩散。";
+  }
+
+  if (category === "股票") {
+    return "这条新闻与股票市场有关，需要结合利率、盈利预期和行业轮动来判断是否具备持续性。";
+  }
+
+  return "这条新闻对宏观和市场有潜在影响，建议结合原油、利率、美元和黄金的联动方向一起判断。";
+}
+
+function buildNewsItem(params: {
+  id: string;
+  time: string;
+  source: string;
+  category: string;
+  headline: string;
+  url?: string;
+}) {
+  return {
+    id: params.id,
+    time: params.time,
+    source: params.source,
+    category: mapCategoryToChinese(params.category),
+    impact: mapImpact(params.headline),
+    headline: params.headline,
+    headlineZh: translateHeadlineToChinese(params.headline, mapCategoryToChinese(params.category)),
+    url: params.url,
+  } satisfies NewsItem;
 }
 
 function formatPrice(value: number, digits = 2, prefix = "") {
@@ -428,22 +518,22 @@ async function fetchMacroSignals() {
 
     const macroSignals: MacroSignal[] = [
       {
-        label: "WTI",
+        label: "WTI原油",
         value: formatPrice(oilLatest, 2, "$"),
         delta: toPercentChange(oilLatest, oilPrev),
       },
       {
-        label: "Gold",
+        label: "黄金",
         value: formatPrice(goldLatest, 2, "$"),
         delta: toPercentChange(goldLatest, goldPrev),
       },
       {
-        label: "US 10Y",
+        label: "美国10年期国债",
         value: `${us10yLatest.toFixed(2)}%`,
         delta: toBasisPoints(us10yLatest, us10yPrev),
       },
       {
-        label: "5Y BEI",
+        label: "5年通胀预期",
         value: `${breakevenLatest.toFixed(2)}%`,
         delta: toBasisPoints(breakevenLatest, breakevenPrev),
       },
@@ -452,7 +542,7 @@ async function fetchMacroSignals() {
     const assetRadar: AssetCard[] = [
       {
         id: "asset-oil",
-        name: "WTI Crude",
+        name: "WTI原油",
         symbol: SERIES_IDS.oil,
         price: formatPrice(oilLatest, 2, "$"),
         move: toPercentChange(oilLatest, oilPrev),
@@ -462,7 +552,7 @@ async function fetchMacroSignals() {
       },
       {
         id: "asset-gold",
-        name: "Gold Fix",
+        name: "现货黄金",
         symbol: SERIES_IDS.gold,
         price: formatPrice(goldLatest, 2, "$"),
         move: toPercentChange(goldLatest, goldPrev),
@@ -472,7 +562,7 @@ async function fetchMacroSignals() {
       },
       {
         id: "asset-us10y",
-        name: "US 10Y Yield",
+        name: "美国10年期国债收益率",
         symbol: SERIES_IDS.us10y,
         price: `${us10yLatest.toFixed(2)}%`,
         move: toBasisPoints(us10yLatest, us10yPrev),
@@ -531,15 +621,16 @@ async function fetchGNewsItems() {
       next: { revalidate: 180 },
     });
 
-    return (data.articles ?? []).slice(0, 4).map((article, index) => ({
-      id: `gnews-${index}`,
-      time: compactTime(article.publishedAt ?? ""),
-      source: article.source?.name ?? "GNews",
-      category: "Macro News",
-      impact: mapImpact(article.title ?? ""),
-      headline: article.title ?? "Untitled article",
-      url: article.url,
-    }));
+    return (data.articles ?? []).slice(0, 4).map((article, index) =>
+      buildNewsItem({
+        id: `gnews-${index}`,
+        time: compactTime(article.publishedAt ?? ""),
+        source: article.source?.name ?? "GNews",
+        category: "Macro News",
+        headline: article.title ?? "Untitled article",
+        url: article.url,
+      }),
+    );
   } catch {
     return [];
   }
@@ -561,15 +652,79 @@ async function fetchGdeltItems() {
       { next: { revalidate: 180 } },
     );
 
-    return (data.articles ?? []).slice(0, 4).map((article, index) => ({
-      id: `gdelt-${index}`,
-      time: compactTime(article.seendate ?? ""),
-      source: article.domain ?? "GDELT",
-      category: "Geopolitics",
-      impact: mapImpact(article.title ?? ""),
-      headline: article.title ?? "Untitled article",
-      url: article.url,
-    }));
+    return (data.articles ?? []).slice(0, 4).map((article, index) =>
+      buildNewsItem({
+        id: `gdelt-${index}`,
+        time: compactTime(article.seendate ?? ""),
+        source: article.domain ?? "GDELT",
+        category: "Geopolitics",
+        headline: article.title ?? "Untitled article",
+        url: article.url,
+      }),
+    );
+  } catch {
+    return [];
+  }
+}
+
+async function fetchMilitaryItems() {
+  const gdeltParams = new URLSearchParams({
+    query: '("middle east" OR israel OR iran OR gaza OR "red sea") (missile OR drone OR strike OR military OR army OR navy OR airstrike)',
+    mode: "artlist",
+    maxrecords: "4",
+    sort: "datedesc",
+    format: "json",
+    timespan: "7days",
+  });
+
+  const newsApiKey = process.env.NEWS_API_KEY;
+
+  try {
+    const gdeltData = await fetchJson<GdeltResponse>(
+      `https://api.gdeltproject.org/api/v2/doc/doc?${gdeltParams.toString()}`,
+      { next: { revalidate: 180 } },
+    );
+
+    const gdeltItems = (gdeltData.articles ?? []).slice(0, 3).map((article, index) =>
+      buildNewsItem({
+        id: `mil-gdelt-${index}`,
+        time: compactTime(article.seendate ?? ""),
+        source: article.domain ?? "GDELT",
+        category: "Military",
+        headline: article.title ?? "Untitled article",
+        url: article.url,
+      }),
+    );
+
+    if (!newsApiKey) {
+      return gdeltItems;
+    }
+
+    const newsApiParams = new URLSearchParams({
+      q: '(Middle East OR Israel OR Iran OR Gaza OR "Red Sea") AND (military OR strike OR missile OR drone)',
+      language: "en",
+      sortBy: "publishedAt",
+      pageSize: "4",
+      apiKey: newsApiKey,
+    });
+
+    const newsApiData = await fetchJson<NewsApiResponse>(
+      `https://newsapi.org/v2/everything?${newsApiParams.toString()}`,
+      { next: { revalidate: 180 } },
+    );
+
+    const newsApiItems = (newsApiData.articles ?? []).slice(0, 2).map((article, index) =>
+      buildNewsItem({
+        id: `mil-newsapi-${index}`,
+        time: compactTime(article.publishedAt ?? ""),
+        source: article.source?.name ?? "NewsAPI",
+        category: "Military",
+        headline: article.title ?? "Untitled article",
+        url: article.url,
+      }),
+    );
+
+    return [...gdeltItems, ...newsApiItems].slice(0, 5);
   } catch {
     return [];
   }
@@ -582,7 +737,11 @@ async function fetchNewsFeed() {
 }
 
 export async function getDashboardPayload(): Promise<DashboardPayload> {
-  const [macroData, newsItems] = await Promise.all([fetchMacroSignals(), fetchNewsFeed()]);
+  const [macroData, newsItems, militaryFeed] = await Promise.all([
+    fetchMacroSignals(),
+    fetchNewsFeed(),
+    fetchMilitaryItems(),
+  ]);
   const thesis = buildDynamicThesis({
     oilLatest: macroData.oilLatest,
     oilPrev: macroData.oilPrev,
@@ -619,6 +778,7 @@ export async function getDashboardPayload(): Promise<DashboardPayload> {
     thesis,
     macroSignals: macroData.macroSignals,
     newsFeed: newsItems,
+    militaryFeed: militaryFeed.length > 0 ? militaryFeed : fallbackNewsFeed.slice(0, 3),
     causalChain,
     assetRadar: macroData.assetRadar,
     feedSources,
