@@ -91,6 +91,15 @@ const monitorSources = [
   { name: "中国采购与招标网", url: "https://chinabidding.com.cn", kw: "展览展示 · 搭建施工", status: "补充" },
 ];
 
+const industryLabels: Record<string, string> = {
+  "光伏组件": "组件",
+  "逆变器/储能": "逆变器/储能",
+  "储能/动力电池": "储能/电池",
+  "储能系统": "储能系统",
+  "储能电芯": "储能电芯",
+  "逆变器": "逆变器",
+};
+
 function Deadline({ d }: { d: string }) {
   const n = daysLeft(d);
 
@@ -194,6 +203,20 @@ export function ExpoRadar() {
   const domesticCount = stats.total - stats.overseas;
   const latestPublishDate = useMemo(() => [...FEEDS].sort((a, b) => b.pubDate.localeCompare(a.pubDate))[0]?.pubDate ?? "", []);
   const todayNewCount = useMemo(() => FEEDS.filter((item) => item.pubDate === latestPublishDate).length, [latestPublishDate]);
+  const industryStats = useMemo(() => {
+    return Object.entries(
+      FEEDS.reduce<Record<string, number>>((acc, item) => {
+        acc[item.seg] = (acc[item.seg] ?? 0) + 1;
+        return acc;
+      }, {}),
+    )
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([segment, count]) => ({
+        label: industryLabels[segment] ?? segment,
+        value: `${count}`,
+      }));
+  }, []);
 
   const actionBoard = useMemo(() => {
     const sorted = [...FEEDS].sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline));
@@ -234,14 +257,10 @@ export function ExpoRadar() {
     },
     {
       key: "region",
-      title: "区域分布",
-      subtitle: "项目所属市场结构",
+      title: "行业分布",
+      subtitle: "项目所属业务赛道",
       tone: "#8B5CF6",
-      stats: [
-        { label: "国内展", value: `${domesticCount}` },
-        { label: "国外展", value: `${stats.overseas}` },
-        { label: "海外占比", value: `${overseasRatio}%` },
-      ],
+      stats: industryStats,
     },
   ] as const;
 
