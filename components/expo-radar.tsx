@@ -165,6 +165,26 @@ function StatCard({
   );
 }
 
+function SectionHeader({
+  index,
+  title,
+  subtitle,
+}: {
+  index: string;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 12 }}>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: colors.accent, fontFamily: "var(--font-mono)" }}>{index}</div>
+        <div style={{ marginTop: 2, fontSize: 20, fontWeight: 700, letterSpacing: -0.5 }}>{title}</div>
+      </div>
+      <div style={{ fontSize: 12, color: colors.sub, maxWidth: 560, lineHeight: 1.6 }}>{subtitle}</div>
+    </div>
+  );
+}
+
 export function ExpoRadar() {
   const [filter, setFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
@@ -237,6 +257,12 @@ export function ExpoRadar() {
     { title: "本周优先跟进", body: "特隆美双项目和晶科慕尼黑项目最接近截标，优先出概念方案和预算框架。", color: colors.hot },
     { title: "客户层级建议", body: "宁德时代、隆基、比亚迪适合走长期框架和高层拜访；海辰、固德威适合快速响应。", color: colors.accent },
     { title: "海外执行准备", body: "慕尼黑与美国项目需要本地施工资源池、物流时程和双语提案模板同步准备。", color: colors.ok },
+  ];
+
+  const workflowSteps = [
+    { id: "01", title: "先看全局", body: "指挥中枢先回答今天最急的项目是谁、海外占比有多高、哪条品类线最热。", tone: colors.accent },
+    { id: "02", title: "再排动作", body: "作战板把项目拆成立即处理、本周推进和储备项目，避免所有线索混在一起。", tone: colors.warn },
+    { id: "03", title: "最后下钻", body: "进入分组项目池后，再展开单个项目查看预算、展会信息和后续 AI 动作。", tone: colors.ok },
   ];
 
   const actionBoard = useMemo(() => {
@@ -405,6 +431,30 @@ export function ExpoRadar() {
           <StatCard label="即将开放" value={stats.upcoming} sub="提前布局" color={colors.ok} active={filter === "upcoming"} onClick={() => setFilter(filter === "upcoming" ? "all" : "upcoming")} />
         </div>
 
+        <SectionHeader
+          index="01"
+          title="今日工作流"
+          subtitle="先建立优先级，再进入具体项目。页面从这里开始就不再是普通列表，而是按真实业务动作往下走。"
+        />
+        <div className="expo-workflow-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
+          {workflowSteps.map((step) => (
+            <div key={step.id} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 999, background: `${step.tone}14`, color: step.tone, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontFamily: "var(--font-mono)" }}>
+                  {step.id}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>{step.title}</div>
+              </div>
+              <div style={{ fontSize: 12, color: colors.sub, lineHeight: 1.7 }}>{step.body}</div>
+            </div>
+          ))}
+        </div>
+
+        <SectionHeader
+          index="02"
+          title="指挥中枢"
+          subtitle="这一层只做判断，不做细节。用来决定今天团队资源先压在哪些客户、哪些区域、哪些展会。"
+        />
         <div className="expo-command-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.25fr) minmax(0, 1fr)", gap: 16, marginBottom: 20 }}>
           <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap", marginBottom: 16 }}>
@@ -510,6 +560,11 @@ export function ExpoRadar() {
           </div>
         </div>
 
+        <SectionHeader
+          index="03"
+          title="本周作战板"
+          subtitle="把所有机会按节奏拆开。先处理临门一脚，再安排一周内能推进的项目，最后保留储备池。"
+        />
         <div className="expo-action-board" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16, marginBottom: 20 }}>
           {[
             { title: "立即处理", subtitle: "3 天内截标", tone: colors.hot, items: actionBoard.immediate },
@@ -550,6 +605,11 @@ export function ExpoRadar() {
           ))}
         </div>
 
+        <SectionHeader
+          index="04"
+          title="项目池"
+          subtitle="进入这里再展开单个项目详情。品类分组保留业务语义，避免所有企业和展会平铺在一条长列表里。"
+        />
         <div style={{ marginBottom: 16, position: "relative" }}>
           <input
             value={searchQ}
@@ -772,7 +832,12 @@ export function ExpoRadar() {
           </aside>
         </div>
 
-        <div style={{ marginTop: 24, borderRadius: 14, overflow: "hidden", border: `1px solid ${colors.border}`, background: colors.card }}>
+        <SectionHeader
+          index="05"
+          title="数据源与自动化"
+          subtitle="最后一层是监控来源和自动化能力。这里不是看项目，而是配置系统如何持续给你产出线索。"
+        />
+        <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${colors.border}`, background: colors.card }}>
           <div style={{ padding: "16px 20px", background: colors.light, borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600 }}>数据源 · 监控设置</div>
@@ -828,6 +893,7 @@ export function ExpoRadar() {
             .expo-main-grid { grid-template-columns: 1fr !important; }
             .expo-command-grid { grid-template-columns: 1fr !important; }
             .expo-action-board { grid-template-columns: 1fr !important; }
+            .expo-workflow-grid { grid-template-columns: 1fr !important; }
             .expo-source-grid { grid-template-columns: 1fr !important; }
           }
           @media (max-width: 720px) {
