@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { registryStats as fallbackRegistryStats } from "@/lib/expo-company-registry";
 import { companySources } from "@/lib/expo-company-sources";
 import { fallbackExpoFeeds } from "@/lib/expo-data";
 import { historicalExhibitors } from "@/lib/historical-exhibitors";
@@ -232,6 +233,8 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
   const [feeds, setFeeds] = useState<FeedItem[]>(initialPayload?.feeds ?? fallbackExpoFeeds);
   const [updatedAt, setUpdatedAt] = useState(initialPayload?.updatedAt ?? new Date().toISOString());
   const [liveCount, setLiveCount] = useState(initialPayload?.liveCount ?? 0);
+  const [registryStats, setRegistryStats] = useState(initialPayload?.registryStats ?? { ...fallbackRegistryStats, platformCount: webSources.length });
+  const [uncoveredCompanies, setUncoveredCompanies] = useState(initialPayload?.uncoveredCompanies ?? []);
 
   useEffect(() => {
     setNow(new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }));
@@ -242,6 +245,8 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
     setFeeds(initialPayload.feeds);
     setUpdatedAt(initialPayload.updatedAt);
     setLiveCount(initialPayload.liveCount);
+    setRegistryStats(initialPayload.registryStats);
+    setUncoveredCompanies(initialPayload.uncoveredCompanies);
   }, [initialPayload]);
 
   useEffect(() => {
@@ -256,6 +261,8 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
         setFeeds(payload.feeds);
         setUpdatedAt(payload.updatedAt);
         setLiveCount(payload.liveCount);
+        setRegistryStats(payload.registryStats);
+        setUncoveredCompanies(payload.uncoveredCompanies);
       } catch {
         // Keep the current board state when live refresh fails.
       }
@@ -653,12 +660,28 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
           <div style={{ padding: "16px 20px", background: colors.light, borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600 }}>数据源 · 监控设置</div>
-              <div style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>历史展商池 {historicalExhibitors.length} 家；官网源 {companySources.length} 家；平台源 {webSources.length} 个</div>
+              <div style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>
+                历史展商池 {registryStats.historicalCount} 家；已识别官网 {registryStats.officialCount} 家；待补官网 {registryStats.uncoveredCount} 家
+              </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: colors.ok }} />
               <span style={{ fontSize: 11, color: colors.ok, fontWeight: 500 }}>{totalMonitorSourceCount} 源已配置</span>
             </div>
+          </div>
+          <div className="expo-source-grid" style={{ padding: "16px 16px 0", display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
+            {[
+              { label: "历史展商", value: registryStats.historicalCount, tone: colors.text, sub: "会刊样本池" },
+              { label: "官网覆盖", value: registryStats.officialCount, tone: colors.accent, sub: `覆盖率 ${registryStats.coverageRate}%` },
+              { label: "待补官网", value: registryStats.uncoveredCount, tone: colors.warn, sub: "优先补企业官网" },
+              { label: "实时命中", value: liveCount, tone: colors.ok, sub: "当前已回流看板" },
+            ].map((item) => (
+              <div key={item.label} style={{ padding: "14px 16px", borderRadius: 14, background: colors.light, border: `1px solid ${colors.border}` }}>
+                <div style={{ fontSize: 11, color: colors.muted }}>{item.label}</div>
+                <div style={{ marginTop: 10, fontSize: 26, fontWeight: 700, color: item.tone, fontFamily: "var(--font-mono)" }}>{item.value}</div>
+                <div style={{ marginTop: 6, fontSize: 11, color: colors.muted }}>{item.sub}</div>
+              </div>
+            ))}
           </div>
           <div className="expo-source-grid" style={{ padding: 16, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
             {monitorSources.map((s, i) => (
@@ -687,6 +710,20 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
               </a>
             ))}
           </div>
+          {uncoveredCompanies.length > 0 ? (
+            <div style={{ padding: "0 16px 16px" }}>
+              <div style={{ padding: "14px 16px", borderRadius: 12, border: `1px solid ${colors.border}`, background: "#FFFDF5" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>待补官网企业</div>
+                <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {uncoveredCompanies.map((company) => (
+                    <span key={company} style={{ fontSize: 11, padding: "5px 9px", borderRadius: 999, background: "#FFF7ED", color: "#9A3412", fontWeight: 500 }}>
+                      {company}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
           <div style={{ padding: "0 16px 16px" }}>
             <button
               onClick={() => {

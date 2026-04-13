@@ -1,3 +1,4 @@
+import { registryStats, uncoveredHistoricalCompanies } from "@/lib/expo-company-registry";
 import { companySources, type CompanySource } from "@/lib/expo-company-sources";
 import { fallbackExpoFeeds } from "@/lib/expo-data";
 import { historicalExhibitors } from "@/lib/historical-exhibitors";
@@ -544,6 +545,11 @@ export async function getExpoRadarPayload(): Promise<ExpoRadarPayload> {
     feeds,
     updatedAt: new Date().toISOString(),
     liveCount: feeds.filter((feed) => feed.isLive).length,
+    registryStats: {
+      ...registryStats,
+      platformCount: webSources.length,
+    },
+    uncoveredCompanies: uncoveredHistoricalCompanies.slice(0, 8).map((item) => item.company),
   };
 }
 

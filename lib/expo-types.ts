@@ -1,3 +1,5 @@
+import type { RegistryStats } from "@/lib/expo-company-registry";
+
 export type FeedItem = {
   id: number;
   co: string;
@@ -30,4 +32,6 @@ export type ExpoRadarPayload = {
   feeds: FeedItem[];
   updatedAt: string;
   liveCount: number;
+  registryStats: RegistryStats;
+  uncoveredCompanies: string[];
 };
