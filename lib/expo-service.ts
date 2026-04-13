@@ -1,6 +1,7 @@
 import { companySources, type CompanySource } from "@/lib/expo-company-sources";
 import { fallbackExpoFeeds } from "@/lib/expo-data";
 import type { ExpoRadarPayload, FeedItem } from "@/lib/expo-types";
+import { globalLeadKeywords, webSources, type WebSource } from "@/lib/expo-web-sources";
 
 type GNewsArticle = {
   title?: string;
@@ -32,7 +33,7 @@ type LiveArticle = {
   publishedAt: string;
   url: string;
   source: string;
-  sourceType: "官网" | "新闻聚合";
+  sourceType: "官网" | "平台" | "新闻聚合";
   company?: string;
   score?: number;
   evidence?: string;
@@ -48,6 +49,13 @@ const COMPANY_MATCHERS = fallbackExpoFeeds.map((feed) => ({
 function formatDate(dateLike: string) {
   const date = new Date(dateLike);
   if (Number.isNaN(date.getTime())) return "";
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}.${mm}.${dd}`;
+}
+
+function formatDateFromDate(date: Date) {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
@@ -120,6 +128,67 @@ function buildEvidence(parts: Array<string | undefined | false>) {
   return parts.filter(Boolean).join(" · ");
 }
 
+function inferRegion(text: string): FeedItem["region"] {
+  const value = text.toLowerCase();
+  if (/(europe|munich|germany|usa|united states|america|north america|south america|africa|overseas|海外|国外|欧洲|德国|美国|美洲|非洲|慕尼黑)/i.test(value)) {
+    return "海外";
+  }
+  return "国内";
+}
+
+function inferExpoName(text: string) {
+  const patterns = [
+    /SNEC[^，。；\n]*/i,
+    /Intersolar[^，。；\n]*/i,
+    /ees Europe[^，。；\n]*/i,
+    /RE\+[^，。；\n]*/i,
+    /Solar Show[^，。；\n]*/i,
+    /Smarter E[^，。；\n]*/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) return match[0].trim();
+  }
+
+  if (/欧洲|美国|美洲|海外|国外/.test(text)) return "海外展会线索";
+  return "待确认展会";
+}
+
+function inferLeadCompany(title: string, sourceName: string) {
+  const matchedCompany = companySources.find((source) => source.matchers.some((matcher) => title.toLowerCase().includes(matcher.toLowerCase())));
+  if (matchedCompany) return matchedCompany.company;
+
+  const explicitMatch = title.match(/^([^\s·|｜\-—:：]{2,20})/);
+  if (explicitMatch) return explicitMatch[1];
+
+  return sourceName;
+}
+
+function inferLeadSegment(title: string) {
+  const value = title.toLowerCase();
+  if (/逆变器|inverter/.test(value)) return "逆变器";
+  if (/储能|battery|ess|bess/.test(value)) return "储能系统";
+  if (/薄膜|thin film|cdte/.test(value)) return "薄膜组件";
+  if (/组件|module|pv/.test(value)) return "光伏组件";
+  return "展台设计/搭建线索";
+}
+
+function inferLeadUrgency(publishedAt: string, score = 0): FeedItem["urg"] {
+  const days = Math.floor((Date.now() - new Date(publishedAt).getTime()) / 86400000);
+  if (score >= 10 || days <= 2) return "hot";
+  if (score >= 5 || days <= 7) return "active";
+  return "upcoming";
+}
+
+function deriveFollowupDeadline(publishedAt: string, urgency: FeedItem["urg"]) {
+  const base = new Date(publishedAt);
+  if (Number.isNaN(base.getTime())) return formatDateFromDate(new Date(Date.now() + 7 * 86400000));
+  const offsetDays = urgency === "hot" ? 3 : urgency === "active" ? 7 : 14;
+  const deadline = new Date(base.getTime() + offsetDays * 86400000);
+  return formatDateFromDate(deadline);
+}
+
 function scoreOfficialArticle(source: CompanySource, url: string, text: string, snippet: string) {
   const combined = `${text} ${snippet}`.toLowerCase();
   const procurementHits = countKeywordHits(combined, source.procurementKeywords);
@@ -134,6 +203,27 @@ function scoreOfficialArticle(source: CompanySource, url: string, text: string, 
       procurementHits > 0 ? `招采词 ${procurementHits}` : undefined,
       expoHits > 0 ? `展会词 ${expoHits}` : undefined,
       matcherHits > 0 ? `品牌词 ${matcherHits}` : undefined,
+      pathHits > 0 ? `栏目命中 ${pathHits}` : undefined,
+    ]),
+  };
+}
+
+function scoreWebLead(source: WebSource, url: string, title: string, snippet: string) {
+  const combined = `${title} ${snippet}`.toLowerCase();
+  const keywordHits = countKeywordHits(combined, source.keywords);
+  const globalHits = countKeywordHits(combined, globalLeadKeywords);
+  const pathHits = countKeywordHits(url.toLowerCase(), source.preferredPathHints);
+  const overseasBonus = /(海外|国外|欧洲|美洲|美国|munich|europe|usa|america)/i.test(combined) ? 3 : 0;
+  const procurementBonus = /(招标|采购|比选|邀标|tender|procurement|rfp|供应商)/i.test(combined) ? 5 : 0;
+  const score = keywordHits * 4 + globalHits * 2 + pathHits + overseasBonus + procurementBonus;
+
+  return {
+    score,
+    evidence: buildEvidence([
+      keywordHits > 0 ? `平台词 ${keywordHits}` : undefined,
+      globalHits > 0 ? `全网词 ${globalHits}` : undefined,
+      procurementBonus > 0 ? "招采命中" : undefined,
+      overseasBonus > 0 ? "海外方向" : undefined,
       pathHits > 0 ? `栏目命中 ${pathHits}` : undefined,
     ]),
   };
@@ -181,6 +271,56 @@ async function fetchCompanyOfficialArticles() {
       try {
         const html = await fetchText(source.url);
         return extractOfficialArticlesFromHtml(source, html);
+      } catch {
+        return [];
+      }
+    }),
+  );
+
+  return results.flat();
+}
+
+function extractPlatformLeadArticles(source: WebSource, html: string) {
+  const anchorPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  const articles: LiveArticle[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = anchorPattern.exec(html)) !== null) {
+    const href = match[1];
+    const title = stripHtml(match[2]);
+    if (!href || title.length < 10 || title.length > 220) continue;
+
+    const snippet = html.slice(Math.max(0, match.index - 200), Math.min(html.length, match.index + match[0].length + 220));
+    const cleanSnippet = stripHtml(snippet).slice(0, 240);
+    const combined = `${title} ${cleanSnippet}`.toLowerCase();
+    const hasKeyword = globalLeadKeywords.some((keyword) => combined.includes(keyword.toLowerCase())) || source.keywords.some((keyword) => combined.includes(keyword.toLowerCase()));
+    if (!hasKeyword) continue;
+
+    const url = absoluteUrl(source.url, href);
+    const { score, evidence } = scoreWebLead(source, url, title, cleanSnippet);
+    if (score < 6) continue;
+
+    articles.push({
+      title,
+      description: cleanSnippet,
+      publishedAt: inferDateFromSnippet(snippet),
+      url,
+      source: source.name,
+      sourceType: "平台",
+      score,
+      evidence,
+    });
+  }
+
+  return articles;
+}
+
+async function fetchPlatformLeadArticles() {
+  const results = await Promise.all(
+    webSources.map(async (source) => {
+      try {
+        const html = await fetchText(source.url);
+        return extractPlatformLeadArticles(source, html);
       } catch {
         return [];
       }
@@ -274,10 +414,11 @@ function inferUrgency(publishedAt: string, fallbackUrgency: FeedItem["urg"]) {
 
 export async function getExpoRadarPayload(): Promise<ExpoRadarPayload> {
   const officialArticles = await fetchCompanyOfficialArticles().catch(() => []);
+  const platformArticles = await fetchPlatformLeadArticles().catch(() => []);
   const newsArticles = normalizeArticles([...(await fetchGNewsArticles().catch(() => [])), ...(await fetchNewsApiArticles().catch(() => []))]);
-  const liveArticles = normalizeArticles([...officialArticles, ...newsArticles]);
+  const liveArticles = normalizeArticles([...officialArticles, ...platformArticles, ...newsArticles]);
 
-  const feeds = fallbackExpoFeeds.map((feed) => {
+  const existingFeeds = fallbackExpoFeeds.map((feed) => {
     const article = matchArticleToFeed(feed, liveArticles);
     if (!article) return feed;
 
@@ -296,9 +437,65 @@ export async function getExpoRadarPayload(): Promise<ExpoRadarPayload> {
     } satisfies FeedItem;
   });
 
+  const usedUrls = new Set(existingFeeds.filter((feed) => feed.srcUrl).map((feed) => feed.srcUrl));
+  const additionalLeadFeeds = liveArticles
+    .filter((article) => !usedUrls.has(article.url))
+    .filter((article) => (article.score ?? 0) >= 8)
+    .slice(0, 12)
+    .map((article, index) => {
+      const company = inferLeadCompany(article.title, article.source);
+      const urgency = inferLeadUrgency(article.publishedAt, article.score);
+      const deadline = deriveFollowupDeadline(article.publishedAt, urgency);
+      const region = inferRegion(`${article.title} ${article.description}`);
+
+      return {
+        id: 1000 + index,
+        co: company,
+        coEn: company,
+        seg: inferLeadSegment(article.title),
+        urg: urgency,
+        title: article.title,
+        expo: inferExpoName(`${article.title} ${article.description}`),
+        expoDate: "待确认",
+        area: "待确认",
+        budget: "待确认",
+        deadline,
+        pubDate: formatDate(article.publishedAt) || formatDateFromDate(new Date()),
+        src: article.source,
+        srcUrl: article.url,
+        desc: `${article.description} 当前由平台/官网公开信息命中，预算、面积、截标时间需人工核验。`,
+        tags: ["全网线索", "待核验", region === "海外" ? "海外方向" : "国内方向"],
+        region,
+        isLive: true,
+        liveHeadline: article.title,
+        livePublishedAt: article.publishedAt,
+        liveSourceType: article.sourceType,
+        liveEvidence: article.evidence,
+        recordType: "全网线索",
+      } satisfies FeedItem;
+    });
+
+  const feeds = normalizeLeadFeeds([...existingFeeds, ...additionalLeadFeeds]);
+
   return {
     feeds,
     updatedAt: new Date().toISOString(),
     liveCount: feeds.filter((feed) => feed.isLive).length,
   };
+}
+
+function normalizeLeadFeeds(feeds: FeedItem[]) {
+  const unique = new Map<string, FeedItem>();
+  for (const feed of feeds) {
+    const key = `${feed.co}-${feed.title}`.toLowerCase();
+    if (!unique.has(key)) unique.set(key, feed);
+  }
+  return [...unique.values()].sort((a, b) => daysFromString(a.deadline) - daysFromString(b.deadline));
+}
+
+function daysFromString(dateLike: string) {
+  if (!dateLike || dateLike.includes("待")) return 999;
+  const parts = dateLike.split(".");
+  if (parts.length < 3) return 999;
+  return Math.ceil((new Date(+parts[0], +parts[1] - 1, +parts[2]).getTime() - Date.now()) / 86400000);
 }

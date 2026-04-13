@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { companySources } from "@/lib/expo-company-sources";
 import { fallbackExpoFeeds } from "@/lib/expo-data";
 import type { ExpoRadarPayload, FeedItem } from "@/lib/expo-types";
+import { webSources } from "@/lib/expo-web-sources";
 
 declare global {
   interface Window {
@@ -58,7 +59,7 @@ const monitorSources = [
   { name: "中国采购与招标网", url: "https://chinabidding.com.cn", kw: "展览展示 · 搭建施工", status: "补充" },
 ];
 
-const totalMonitorSourceCount = companySources.length + 2;
+const totalMonitorSourceCount = companySources.length + webSources.length + 2;
 
 const industryLabels: Record<string, string> = {
   "光伏组件": "组件",
@@ -531,7 +532,7 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
                             <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, padding: "3px 10px", borderRadius: 999, background: u.bg, color: u.dot, border: `1px solid ${u.border}` }}>{u.label}</span>
                             {f.isLive ? (
                               <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.3, padding: "3px 10px", borderRadius: 999, background: "rgba(25,240,186,0.12)", color: "#089981", border: "1px solid rgba(25,240,186,0.35)" }}>
-                                {f.liveSourceType === "官网" ? "官网命中" : "聚合命中"}
+                                {f.liveSourceType === "官网" ? "官网命中" : f.liveSourceType === "平台" ? "平台命中" : "聚合命中"}
                               </span>
                             ) : null}
                           </div>
@@ -575,6 +576,11 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
                           <span style={{ fontSize: 10, padding: "4px 8px", borderRadius: 999, background: f.region === "海外" ? "#EDE9FE" : "#ECFDF5", color: f.region === "海外" ? "#7C3AED" : "#059669", fontWeight: 500 }}>
                             {f.region}
                           </span>
+                          {f.recordType === "全网线索" ? (
+                            <span style={{ fontSize: 10, padding: "4px 8px", borderRadius: 999, background: "#EEF2FF", color: "#4F46E5", fontWeight: 500 }}>
+                              全网线索
+                            </span>
+                          ) : null}
                         </div>
 
                         <div style={{ marginTop: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -641,7 +647,7 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
           <div style={{ padding: "16px 20px", background: colors.light, borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600 }}>数据源 · 监控设置</div>
-              <div style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>官网源优先，聚合源补充；当前已覆盖 {companySources.length} 家企业官网</div>
+              <div style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>官网源 + 平台源并行抓取；当前已覆盖 {companySources.length} 家企业官网与 {webSources.length} 个平台源</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: colors.ok }} />

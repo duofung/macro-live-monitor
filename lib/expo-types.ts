@@ -20,8 +20,9 @@ export type FeedItem = {
   isLive?: boolean;
   liveHeadline?: string;
   livePublishedAt?: string;
-  liveSourceType?: "官网" | "新闻聚合";
+  liveSourceType?: "官网" | "平台" | "新闻聚合";
   liveEvidence?: string;
+  recordType?: "既有项目" | "全网线索";
 };
 
 export type ExpoRadarPayload = {
