@@ -233,11 +233,38 @@ export function ExpoRadar() {
   }, [filtered]);
 
   const overseasRatio = Math.round((stats.overseas / stats.total) * 100);
+  const avgBudget = Math.round(stats.totalBudget / stats.total);
 
   const actionNotes = [
     { title: "本周优先跟进", body: "特隆美双项目和晶科慕尼黑项目最接近截标，优先出概念方案和预算框架。", color: colors.hot },
     { title: "客户层级建议", body: "宁德时代、隆基、比亚迪适合走长期框架和高层拜访；海辰、固德威适合快速响应。", color: colors.accent },
     { title: "海外执行准备", body: "慕尼黑与美国项目需要本地施工资源池、物流时程和双语提案模板同步准备。", color: colors.ok },
+  ];
+
+  const actionBoard = useMemo(() => {
+    const sorted = [...FEEDS].sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline));
+
+    return {
+      immediate: sorted.filter((item) => daysLeft(item.deadline) <= 3),
+      thisWeek: sorted.filter((item) => daysLeft(item.deadline) > 3 && daysLeft(item.deadline) <= 10),
+      pipeline: sorted.filter((item) => daysLeft(item.deadline) > 10).slice(0, 5),
+    };
+  }, []);
+
+  const deadlineTimeline = useMemo(() => {
+    return [...FEEDS]
+      .sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline))
+      .slice(0, 6)
+      .map((item) => ({
+        ...item,
+        left: Math.max(daysLeft(item.deadline), 0),
+      }));
+  }, []);
+
+  const commandBarStats = [
+    { label: "平均项目额度", value: `¥${avgBudget}万`, tone: colors.accent },
+    { label: "框架采购线索", value: `${FEEDS.filter((item) => item.title.includes("框架") || item.title.includes("年度")).length}`, tone: "#8B5CF6" },
+    { label: "7日内截标", value: `${FEEDS.filter((item) => daysLeft(item.deadline) <= 7).length}`, tone: colors.hot },
   ];
 
   return (
@@ -384,6 +411,97 @@ export function ExpoRadar() {
           <StatCard label="进行中" value={stats.active} sub="可跟进项目" color={colors.warn} active={filter === "active"} onClick={() => setFilter(filter === "active" ? "all" : "active")} />
           <StatCard label="XpandExpo 竞标" value={stats.bidding} sub="特隆美 SNEC + 慕尼黑" color={colors.accent} active={regionFilter === "bidding"} onClick={() => setRegionFilter(regionFilter === "bidding" ? "all" : "bidding")} />
           <StatCard label="即将开放" value={stats.upcoming} sub="提前布局" color={colors.ok} active={filter === "upcoming"} onClick={() => setFilter(filter === "upcoming" ? "all" : "upcoming")} />
+        </div>
+
+        <div className="expo-command-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.3fr) minmax(280px, 0.7fr)", gap: 16, marginBottom: 20 }}>
+          <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap", marginBottom: 14 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>指挥条</div>
+                <div style={{ marginTop: 4, fontSize: 12, color: colors.sub }}>把最重要的项目、预算密度和框架采购线索先看掉，再进入详细跟进。</div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  onClick={() => window.sendPrompt?.("根据当前ExpoRadar项目池，帮我生成本周销售跟进清单，按紧急度、客户等级、海外执行难度排序。")}
+                  style={{ padding: "9px 14px", borderRadius: 10, border: "none", background: colors.text, color: "#fff", fontSize: 12, fontWeight: 600 }}
+                >
+                  生成跟进清单 ↗
+                </button>
+                <button
+                  onClick={() => window.sendPrompt?.("针对ExpoRadar中的海外项目，帮我生成双语提案材料准备列表，包括方案、预算、物流、施工和本地合作方。")}
+                  style={{ padding: "9px 14px", borderRadius: 10, border: `1px solid ${colors.border}`, background: colors.card, color: colors.text, fontSize: 12, fontWeight: 600 }}
+                >
+                  生成双语准备项 ↗
+                </button>
+              </div>
+            </div>
+            <div className="expo-command-stats" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+              {commandBarStats.map((item) => (
+                <div key={item.label} style={{ padding: "14px 16px", borderRadius: 14, background: `${item.tone}10`, border: `1px solid ${item.tone}24` }}>
+                  <div style={{ fontSize: 11, color: colors.sub }}>{item.label}</div>
+                  <div style={{ marginTop: 8, fontSize: 22, fontWeight: 700, letterSpacing: -0.8, color: item.tone, fontFamily: "var(--font-mono)" }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>截标时间轴</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {deadlineTimeline.map((item) => (
+                <div key={item.id} style={{ display: "grid", gridTemplateColumns: "62px 1fr auto", gap: 10, alignItems: "center" }}>
+                  <div style={{ fontSize: 11, color: colors.muted, fontFamily: "var(--font-mono)" }}>{item.deadline}</div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>{item.co}</div>
+                    <div style={{ fontSize: 11, color: colors.sub }}>{item.expo}</div>
+                  </div>
+                  <div style={{ fontSize: 11, padding: "4px 8px", borderRadius: 999, background: item.left <= 3 ? colors.hotBg : colors.light, color: item.left <= 3 ? colors.hot : colors.sub, fontWeight: 600 }}>
+                    D-{item.left}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="expo-action-board" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16, marginBottom: 20 }}>
+          {[
+            { title: "立即处理", subtitle: "3 天内截标", tone: colors.hot, items: actionBoard.immediate },
+            { title: "本周推进", subtitle: "4-10 天内", tone: colors.warn, items: actionBoard.thisWeek },
+            { title: "储备项目", subtitle: "10 天后", tone: colors.ok, items: actionBoard.pipeline },
+          ].map((column) => (
+            <div key={column.title} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, overflow: "hidden" }}>
+              <div style={{ padding: "16px 18px", borderBottom: `1px solid ${colors.border}`, background: `${column.tone}10` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: column.tone }}>{column.title}</div>
+                    <div style={{ marginTop: 4, fontSize: 11, color: colors.sub }}>{column.subtitle}</div>
+                  </div>
+                  <div style={{ fontSize: 18, fontFamily: "var(--font-mono)", fontWeight: 700, color: column.tone }}>{column.items.length}</div>
+                </div>
+              </div>
+              <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, minHeight: 240 }}>
+                {column.items.length === 0 ? (
+                  <div style={{ fontSize: 12, color: colors.muted, padding: 16 }}>当前没有项目。</div>
+                ) : (
+                  column.items.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setExpanded(item.id)}
+                      style={{ textAlign: "left", border: `1px solid ${colors.border}`, background: colors.light, borderRadius: 14, padding: "12px 14px" }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700 }}>{item.co}</span>
+                        <Deadline d={item.deadline} />
+                      </div>
+                      <div style={{ marginTop: 6, fontSize: 12, color: colors.sub, lineHeight: 1.55 }}>{item.title}</div>
+                      <div style={{ marginTop: 8, fontSize: 11, color: colors.muted }}>{item.expo}</div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div style={{ marginBottom: 16, position: "relative" }}>
@@ -720,11 +838,14 @@ export function ExpoRadar() {
           @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
           @media (max-width: 1100px) {
             .expo-main-grid { grid-template-columns: 1fr !important; }
+            .expo-command-grid { grid-template-columns: 1fr !important; }
+            .expo-action-board { grid-template-columns: 1fr !important; }
             .expo-source-grid { grid-template-columns: 1fr !important; }
           }
           @media (max-width: 720px) {
             .expo-hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
             .expo-summary-grid { grid-template-columns: 1fr !important; }
+            .expo-command-stats { grid-template-columns: 1fr !important; }
           }
           @media (max-width: 560px) {
             .expo-hero-stats { grid-template-columns: 1fr !important; }
