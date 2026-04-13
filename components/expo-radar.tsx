@@ -170,7 +170,6 @@ export function ExpoRadar() {
   const [regionFilter, setRegionFilter] = useState("all");
   const [expanded, setExpanded] = useState<number | null>(null);
   const [now, setNow] = useState("14:32");
-  const [searchQ, setSearchQ] = useState("");
 
   useEffect(() => {
     setNow(new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }));
@@ -183,13 +182,9 @@ export function ExpoRadar() {
     if (regionFilter === "overseas") list = list.filter((f) => f.region === "海外");
     if (regionFilter === "domestic") list = list.filter((f) => f.region === "国内");
     if (regionFilter === "bidding") list = list.filter((f) => f.bidding);
-    if (searchQ.trim()) {
-      const q = searchQ.toLowerCase();
-      list = list.filter((f) => f.co.includes(searchQ) || f.coEn.toLowerCase().includes(q) || f.title.includes(searchQ));
-    }
 
     return [...list].sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline));
-  }, [filter, regionFilter, searchQ]);
+  }, [filter, regionFilter]);
 
   const stats = useMemo(() => {
     const totalBudget = FEEDS.reduce((s, f) => s + fmtMoney(f.budget), 0);
@@ -245,6 +240,18 @@ export function ExpoRadar() {
             overflow: "hidden",
           }}
         >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              opacity: 0.24,
+              backgroundImage:
+                "linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.18) 48%, transparent 100%), linear-gradient(rgba(255,255,255,.10) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px)",
+              backgroundSize: "220px 100%, 32px 32px, 32px 32px",
+              backgroundPosition: "-220px 0, 0 0, 0 0",
+              animation: "heroScan 8s linear infinite, heroGridFloat 16s linear infinite",
+            }}
+          />
           <div
             style={{
               position: "absolute",
@@ -377,56 +384,31 @@ export function ExpoRadar() {
           <StatCard label="国外展" value={stats.overseas} sub={`海外占比 ${overseasRatio}%`} color={"#8B5CF6"} active={regionFilter === "overseas"} onClick={() => setRegionFilter(regionFilter === "overseas" ? "all" : "overseas")} />
           <StatCard label="预计发出" value={stats.upcoming} sub="提前布局项目" color={colors.ok} active={filter === "upcoming"} onClick={() => setFilter(filter === "upcoming" ? "all" : "upcoming")} />
         </div>
-        <div style={{ marginBottom: 16, position: "relative" }}>
-          <input
-            value={searchQ}
-            onChange={(e) => setSearchQ(e.target.value)}
-            placeholder="搜索企业名 / 展会名 / 关键词..."
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              padding: "12px 16px 12px 40px",
-              background: colors.card,
-              border: `1px solid ${colors.border}`,
-              borderRadius: 12,
-              fontSize: 13,
-              color: colors.text,
-              outline: "none",
-            }}
-          />
-          <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", opacity: 0.35 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-        </div>
-
-        <div className="expo-main-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.7fr) minmax(320px, 0.9fr)", gap: 20, alignItems: "start" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {filtered.length === 0 ? (
-              <div style={{ padding: 48, textAlign: "center", color: colors.muted, fontSize: 13, background: colors.card, borderRadius: 14, border: `1px solid ${colors.border}` }}>
-                当前筛选条件下暂无招标信息
-              </div>
-            ) : null}
-
-            {groupedFeeds.map(([segment, items]) => (
-              <section key={segment} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, overflow: "hidden" }}>
+        <div className="expo-module-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 18, alignItems: "stretch", marginBottom: 20 }}>
+          {[
+            ...groupedFeeds.map(([segment, items]) => ({ kind: "segment" as const, segment, items })),
+            { kind: "board" as const, title: "本周推荐", tone: colors.warn, subtitle: "适合本周重点跟进的项目", items: actionBoard.thisWeek.slice(0, 4) },
+            { kind: "board" as const, title: "储备项目", tone: colors.ok, subtitle: "适合提前布局和准备素材的项目", items: actionBoard.pipeline },
+          ].map((module) =>
+            module.kind === "segment" ? (
+              <section key={module.segment} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, overflow: "hidden", minHeight: 360, display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "18px 20px", borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
                   <div>
-                    <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: -0.4 }}>{segment}</div>
-                    <div style={{ marginTop: 4, fontSize: 12, color: colors.sub }}>{segmentLabels[segment as keyof typeof segmentLabels] ?? "当前品类项目池"}</div>
+                    <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: -0.4 }}>{module.segment}</div>
+                    <div style={{ marginTop: 4, fontSize: 12, color: colors.sub }}>{segmentLabels[module.segment as keyof typeof segmentLabels] ?? "当前品类项目池"}</div>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, padding: "5px 10px", background: colors.light, borderRadius: 999, color: colors.sub, fontWeight: 500 }}>
-                      {items.length} 个项目
+                      {module.items.length} 个项目
                     </span>
                     <span style={{ fontSize: 11, padding: "5px 10px", background: colors.hotBg, borderRadius: 999, color: colors.hot, fontWeight: 600 }}>
-                      {items.filter((item) => item.urg === "hot").length} 个紧急
+                      {module.items.filter((item) => item.urg === "hot").length} 个紧急
                     </span>
                   </div>
                 </div>
 
-                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                  {items.map((f) => {
+                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, flex: 1, overflow: "auto" }}>
+                  {module.items.map((f) => {
                     const u = urgMap[f.urg];
                     const isExp = expanded === f.id;
                     const dl = daysLeft(f.deadline);
@@ -468,11 +450,7 @@ export function ExpoRadar() {
                               </span>
                               <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: -0.3 }}>{f.co}</span>
                               <span style={{ fontSize: 11, color: colors.muted }}>{f.coEn}</span>
-                              {f.bidding ? (
-                                <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: colors.accent, color: "#fff", letterSpacing: 0.3 }}>
-                                  XpandExpo 竞标中
-                                </span>
-                              ) : null}
+                              {f.bidding ? <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: colors.accent, color: "#fff", letterSpacing: 0.3 }}>XpandExpo 竞标中</span> : null}
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               {dl <= 7 && dl > 0 ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: colors.hot, animation: "pulse 1.5s infinite" }} /> : null}
@@ -490,21 +468,7 @@ export function ExpoRadar() {
                               { icon: "D", label: "截标", value: f.deadline },
                             ].map((spec, i) => (
                               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <div
-                                  style={{
-                                    width: 22,
-                                    height: 22,
-                                    borderRadius: 6,
-                                    background: colors.light,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: 9,
-                                    fontWeight: 700,
-                                    color: colors.accent,
-                                    fontFamily: "var(--font-mono)",
-                                  }}
-                                >
+                                <div style={{ width: 22, height: 22, borderRadius: 6, background: colors.light, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: colors.accent, fontFamily: "var(--font-mono)" }}>
                                   {spec.icon}
                                 </div>
                                 <div>
@@ -541,13 +505,7 @@ export function ExpoRadar() {
                                 </div>
                               </div>
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                <a
-                                  href={f.srcUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  style={{ fontSize: 12, padding: "8px 16px", borderRadius: 10, textDecoration: "none", background: colors.text, color: "#fff", fontWeight: 500 }}
-                                >
+                                <a href={f.srcUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontSize: 12, padding: "8px 16px", borderRadius: 10, textDecoration: "none", background: colors.text, color: "#fff", fontWeight: 500 }}>
                                   查看来源
                                 </a>
                                 <button
@@ -577,60 +535,31 @@ export function ExpoRadar() {
                   })}
                 </div>
               </section>
-            ))}
-
-            <div style={{ fontSize: 11, color: colors.muted, textAlign: "right", fontFamily: "var(--font-mono)" }}>
-              {filtered.length} / {FEEDS.length} results · sorted by deadline
-            </div>
-          </div>
-
-          <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, overflow: "hidden" }}>
-              <div style={{ padding: "16px 18px", borderBottom: `1px solid ${colors.border}`, background: `${colors.warn}10` }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: colors.warn }}>本周推荐</div>
-                <div style={{ marginTop: 4, fontSize: 11, color: colors.sub }}>适合本周重点跟进的项目</div>
-              </div>
-              <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                {actionBoard.thisWeek.slice(0, 4).map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setExpanded(item.id)}
-                    style={{ textAlign: "left", border: `1px solid ${colors.border}`, background: colors.light, borderRadius: 14, padding: "12px 14px" }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                      <span style={{ fontSize: 12, fontWeight: 700 }}>{item.co}</span>
-                      <Deadline d={item.deadline} />
-                    </div>
-                    <div style={{ marginTop: 6, fontSize: 12, color: colors.sub, lineHeight: 1.55 }}>{item.title}</div>
-                    <div style={{ marginTop: 8, fontSize: 11, color: colors.muted }}>{item.expo}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, overflow: "hidden" }}>
-              <div style={{ padding: "16px 18px", borderBottom: `1px solid ${colors.border}`, background: `${colors.ok}10` }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: colors.ok }}>储备项目</div>
-                <div style={{ marginTop: 4, fontSize: 11, color: colors.sub }}>适合提前布局和准备素材的项目</div>
-              </div>
-              <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                {actionBoard.pipeline.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setExpanded(item.id)}
-                    style={{ textAlign: "left", border: `1px solid ${colors.border}`, background: colors.light, borderRadius: 14, padding: "12px 14px" }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                      <span style={{ fontSize: 12, fontWeight: 700 }}>{item.co}</span>
-                      <Deadline d={item.deadline} />
-                    </div>
-                    <div style={{ marginTop: 6, fontSize: 12, color: colors.sub, lineHeight: 1.55 }}>{item.title}</div>
-                    <div style={{ marginTop: 8, fontSize: 11, color: colors.muted }}>{item.expo}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </aside>
+            ) : (
+              <section key={module.title} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, overflow: "hidden", minHeight: 360, display: "flex", flexDirection: "column" }}>
+                <div style={{ padding: "16px 18px", borderBottom: `1px solid ${colors.border}`, background: `${module.tone}10` }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: module.tone }}>{module.title}</div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: colors.sub }}>{module.subtitle}</div>
+                </div>
+                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+                  {module.items.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setExpanded(item.id)}
+                      style={{ textAlign: "left", border: `1px solid ${colors.border}`, background: colors.light, borderRadius: 14, padding: "12px 14px" }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700 }}>{item.co}</span>
+                        <Deadline d={item.deadline} />
+                      </div>
+                      <div style={{ marginTop: 6, fontSize: 12, color: colors.sub, lineHeight: 1.55 }}>{item.title}</div>
+                      <div style={{ marginTop: 8, fontSize: 11, color: colors.muted }}>{item.expo}</div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ),
+          )}
         </div>
         <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${colors.border}`, background: colors.card }}>
           <div style={{ padding: "16px 20px", background: colors.light, borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -684,13 +613,16 @@ export function ExpoRadar() {
 
         <style>{`
           @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+          @keyframes heroScan{0%{background-position:-220px 0,0 0,0 0}100%{background-position:calc(100% + 220px) 0,0 0,0 0}}
+          @keyframes heroGridFloat{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(-8px,4px,0)}100%{transform:translate3d(0,0,0)}}
           @media (max-width: 1100px) {
-            .expo-main-grid { grid-template-columns: 1fr !important; }
+            .expo-module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
             .expo-source-grid { grid-template-columns: 1fr !important; }
           }
           @media (max-width: 720px) {
             .expo-hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
             .expo-summary-grid { grid-template-columns: 1fr !important; }
+            .expo-module-grid { grid-template-columns: 1fr !important; }
           }
           @media (max-width: 560px) {
             .expo-hero-stats { grid-template-columns: 1fr !important; }
