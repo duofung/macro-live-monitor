@@ -528,7 +528,7 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
                             <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, padding: "3px 10px", borderRadius: 999, background: u.bg, color: u.dot, border: `1px solid ${u.border}` }}>{u.label}</span>
                             {f.isLive ? (
                               <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.3, padding: "3px 10px", borderRadius: 999, background: "rgba(25,240,186,0.12)", color: "#089981", border: "1px solid rgba(25,240,186,0.35)" }}>
-                                实时命中
+                                {f.liveSourceType === "官网" ? "官网命中" : "聚合命中"}
                               </span>
                             ) : null}
                           </div>

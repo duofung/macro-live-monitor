@@ -20,6 +20,7 @@ export type FeedItem = {
   isLive?: boolean;
   liveHeadline?: string;
   livePublishedAt?: string;
+  liveSourceType?: "官网" | "新闻聚合";
 };
 
 export type ExpoRadarPayload = {
