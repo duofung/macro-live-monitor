@@ -233,8 +233,6 @@ export function ExpoRadar() {
   }, [filtered]);
 
   const overseasRatio = Math.round((stats.overseas / stats.total) * 100);
-  const avgBudget = Math.round(stats.totalBudget / stats.total);
-
   const actionNotes = [
     { title: "本周优先跟进", body: "特隆美双项目和晶科慕尼黑项目最接近截标，优先出概念方案和预算框架。", color: colors.hot },
     { title: "客户层级建议", body: "宁德时代、隆基、比亚迪适合走长期框架和高层拜访；海辰、固德威适合快速响应。", color: colors.accent },
@@ -260,12 +258,6 @@ export function ExpoRadar() {
         left: Math.max(daysLeft(item.deadline), 0),
       }));
   }, []);
-
-  const commandBarStats = [
-    { label: "平均项目额度", value: `¥${avgBudget}万`, tone: colors.accent },
-    { label: "框架采购线索", value: `${FEEDS.filter((item) => item.title.includes("框架") || item.title.includes("年度")).length}`, tone: "#8B5CF6" },
-    { label: "7日内截标", value: `${FEEDS.filter((item) => daysLeft(item.deadline) <= 7).length}`, tone: colors.hot },
-  ];
 
   return (
     <div style={{ minHeight: "100vh", background: colors.bg, padding: 24 }}>
@@ -413,12 +405,12 @@ export function ExpoRadar() {
           <StatCard label="即将开放" value={stats.upcoming} sub="提前布局" color={colors.ok} active={filter === "upcoming"} onClick={() => setFilter(filter === "upcoming" ? "all" : "upcoming")} />
         </div>
 
-        <div className="expo-command-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.3fr) minmax(280px, 0.7fr)", gap: 16, marginBottom: 20 }}>
+        <div className="expo-command-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.25fr) minmax(0, 1fr)", gap: 16, marginBottom: 20 }}>
           <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap", marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap", marginBottom: 16 }}>
               <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>指挥条</div>
-                <div style={{ marginTop: 4, fontSize: 12, color: colors.sub }}>把最重要的项目、预算密度和框架采购线索先看掉，再进入详细跟进。</div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>指挥中枢</div>
+                <div style={{ marginTop: 4, fontSize: 12, color: colors.sub }}>先看最急项目、区域结构和品类热度，再进入分组列表逐项处理。</div>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button
@@ -435,13 +427,67 @@ export function ExpoRadar() {
                 </button>
               </div>
             </div>
-            <div className="expo-command-stats" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-              {commandBarStats.map((item) => (
-                <div key={item.label} style={{ padding: "14px 16px", borderRadius: 14, background: `${item.tone}10`, border: `1px solid ${item.tone}24` }}>
-                  <div style={{ fontSize: 11, color: colors.sub }}>{item.label}</div>
-                  <div style={{ marginTop: 8, fontSize: 22, fontWeight: 700, letterSpacing: -0.8, color: item.tone, fontFamily: "var(--font-mono)" }}>{item.value}</div>
+
+            <div className="expo-command-stats" style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 16 }}>
+              <div style={{ background: colors.light, borderRadius: 16, padding: 16 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>今日焦点</div>
+                <div style={{ fontSize: 12, color: colors.sub, lineHeight: 1.6, marginBottom: 16 }}>
+                  先抢 7 天内截标项目，再按海外执行难度和客户体量做资源分配。
                 </div>
-              ))}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {topUrgent.map((item, index) => (
+                    <div key={item.id} style={{ display: "grid", gridTemplateColumns: "20px 1fr auto", gap: 10, alignItems: "center" }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 999, background: index === 0 ? colors.hotBg : colors.card, color: index === 0 ? colors.hot : colors.sub, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700 }}>
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600 }}>{item.co}</div>
+                        <div style={{ fontSize: 11, color: colors.muted }}>{item.title}</div>
+                      </div>
+                      <Deadline d={item.deadline} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ background: colors.light, borderRadius: 16, padding: 16 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>区域分布</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center", marginBottom: 12 }}>
+                    <div style={{ height: 10, background: colors.card, borderRadius: 999, overflow: "hidden" }}>
+                      <div style={{ width: `${overseasRatio}%`, height: "100%", background: "linear-gradient(90deg, #8B5CF6, #0066FF)" }} />
+                    </div>
+                    <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: colors.text }}>{overseasRatio}% 海外</div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
+                    <div style={{ background: colors.card, borderRadius: 12, padding: 12 }}>
+                      <div style={{ fontSize: 11, color: colors.muted }}>国内项目</div>
+                      <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{stats.total - stats.overseas}</div>
+                    </div>
+                    <div style={{ background: colors.card, borderRadius: 12, padding: 12 }}>
+                      <div style={{ fontSize: 11, color: colors.muted }}>海外项目</div>
+                      <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{stats.overseas}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ background: colors.light, borderRadius: 16, padding: 16 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>品类热度</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {segmentStats.map(([segment, value]) => (
+                      <div key={segment}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 500 }}>{segment}</span>
+                          <span style={{ fontSize: 11, color: colors.muted }}>{value.count} 项 / {value.hot} 紧急</span>
+                        </div>
+                        <div style={{ height: 8, background: colors.card, borderRadius: 999, overflow: "hidden" }}>
+                          <div style={{ width: `${(value.count / stats.total) * 100}%`, height: "100%", background: value.hot > 0 ? `linear-gradient(90deg, ${colors.hot}, ${colors.accent})` : colors.accent }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -712,64 +758,6 @@ export function ExpoRadar() {
           </div>
 
           <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>今日焦点</div>
-              <div style={{ fontSize: 12, color: colors.sub, lineHeight: 1.6, marginBottom: 16 }}>
-                先抢 7 天内截标项目，再按海外执行难度和客户体量做资源分配。
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {topUrgent.map((item, index) => (
-                  <div key={item.id} style={{ display: "grid", gridTemplateColumns: "20px 1fr auto", gap: 10, alignItems: "center" }}>
-                    <div style={{ width: 20, height: 20, borderRadius: 999, background: index === 0 ? colors.hotBg : colors.light, color: index === 0 ? colors.hot : colors.sub, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700 }}>
-                      {index + 1}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{item.co}</div>
-                      <div style={{ fontSize: 11, color: colors.muted }}>{item.title}</div>
-                    </div>
-                    <Deadline d={item.deadline} />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>区域分布</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center", marginBottom: 12 }}>
-                <div style={{ height: 10, background: colors.light, borderRadius: 999, overflow: "hidden" }}>
-                  <div style={{ width: `${overseasRatio}%`, height: "100%", background: "linear-gradient(90deg, #8B5CF6, #0066FF)" }} />
-                </div>
-                <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: colors.text }}>{overseasRatio}% 海外</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
-                <div style={{ background: colors.light, borderRadius: 12, padding: 12 }}>
-                  <div style={{ fontSize: 11, color: colors.muted }}>国内项目</div>
-                  <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{stats.total - stats.overseas}</div>
-                </div>
-                <div style={{ background: colors.light, borderRadius: 12, padding: 12 }}>
-                  <div style={{ fontSize: 11, color: colors.muted }}>海外项目</div>
-                  <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{stats.overseas}</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>品类热度</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {segmentStats.map(([segment, value]) => (
-                  <div key={segment}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
-                      <span style={{ fontSize: 12, fontWeight: 500 }}>{segment}</span>
-                      <span style={{ fontSize: 11, color: colors.muted }}>{value.count} 项 / {value.hot} 紧急</span>
-                    </div>
-                    <div style={{ height: 8, background: colors.light, borderRadius: 999, overflow: "hidden" }}>
-                      <div style={{ width: `${(value.count / stats.total) * 100}%`, height: "100%", background: value.hot > 0 ? `linear-gradient(90deg, ${colors.hot}, ${colors.accent})` : colors.accent }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>行动建议</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
