@@ -165,6 +165,83 @@ function StatCard({
   );
 }
 
+function RadarMark() {
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: 56,
+        height: 56,
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 8,
+          borderRadius: "50%",
+          border: "3px solid #19f0ba",
+          boxShadow: "0 0 18px rgba(25,240,186,0.22)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 8,
+          animation: "radarSpin 4.5s linear infinite",
+          transformOrigin: "50% 50%",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            width: 8,
+            height: 8,
+            marginLeft: -4,
+            marginTop: -4,
+            borderRadius: "50%",
+            background: "#19f0ba",
+            boxShadow: "0 0 10px rgba(25,240,186,0.9)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            width: 3,
+            height: 18,
+            marginLeft: -1.5,
+            marginTop: -2,
+            background: "linear-gradient(180deg, rgba(25,240,186,0.95), rgba(25,240,186,0.35))",
+            borderRadius: 999,
+            transformOrigin: "50% 2px",
+            transform: "rotate(28deg)",
+          }}
+        />
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          left: 4,
+          bottom: 6,
+          width: 18,
+          height: 10,
+          borderLeft: "4px solid #19f0ba",
+          borderBottom: "4px solid #19f0ba",
+          borderBottomLeftRadius: 14,
+          transform: "rotate(-12deg)",
+          opacity: 0.95,
+          animation: "radarTail 3.6s ease-in-out infinite",
+          transformOrigin: "100% 100%",
+        }}
+      />
+    </div>
+  );
+}
+
 export function ExpoRadar() {
   const [filter, setFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
@@ -308,7 +385,10 @@ export function ExpoRadar() {
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: colors.ok, boxShadow: `0 0 8px ${colors.ok}` }} />
                   <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 500, letterSpacing: 1, textTransform: "uppercase" }}>System online</span>
                 </div>
-                <h1 style={{ fontSize: 26, fontWeight: 700, color: "#F8FAFC", margin: 0, letterSpacing: -0.5 }}>ExpoRadar</h1>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <h1 style={{ fontSize: 26, fontWeight: 700, color: "#F8FAFC", margin: 0, letterSpacing: -0.5 }}>ExpoRadar</h1>
+                  <RadarMark />
+                </div>
                 <p style={{ fontSize: 13, color: "#94A3B8", margin: "6px 0 0", lineHeight: 1.4 }}>
                   新能源产业链 · 展览招标监控中心 · XpandExpo 接单看板
                 </p>
@@ -578,6 +658,8 @@ export function ExpoRadar() {
           @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
           @keyframes heroVerticalScan{0%{background-position:0 -220px,0 0,0 0}50%{background-position:0 calc(50% - 20px),0 -6px,0 10px}100%{background-position:0 calc(100% + 220px),0 0,0 0}}
           @keyframes heroLineFloat{0%{transform:translateY(0)}50%{transform:translateY(-10px)}100%{transform:translateY(0)}}
+          @keyframes radarSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+          @keyframes radarTail{0%,100%{transform:rotate(-16deg) translateY(0)}50%{transform:rotate(8deg) translateY(2px)}}
           @media (max-width: 1100px) {
             .expo-row-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
             .expo-source-grid { grid-template-columns: 1fr !important; }
