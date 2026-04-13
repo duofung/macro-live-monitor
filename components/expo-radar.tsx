@@ -721,8 +721,26 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   {uncoveredCompanyCandidates.map((item) => (
                     <div key={item.company} style={{ padding: "12px 12px", borderRadius: 10, background: "#FFFFFF", border: `1px solid ${colors.border}` }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>{item.company}</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>{item.company}</div>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            padding: "4px 8px",
+                            borderRadius: 999,
+                            background: item.priority === "高优先" ? "#FEE2E2" : item.priority === "中优先" ? "#FEF3C7" : "#EEF2FF",
+                            color: item.priority === "高优先" ? "#B91C1C" : item.priority === "中优先" ? "#B45309" : "#4338CA",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {item.priority}
+                        </span>
+                      </div>
                       <div style={{ marginTop: 2, fontSize: 11, color: colors.muted }}>{item.companyEn}</div>
+                      <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap", fontSize: 10, color: colors.sub }}>
+                        <span>展馆 {item.hall}</span>
+                        <span>面积 {item.area}㎡</span>
+                      </div>
                       <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
                         {item.candidateUrls.map((url) => (
                           <span key={url} style={{ fontSize: 10, padding: "4px 8px", borderRadius: 999, background: "#EEF2FF", color: "#4338CA", fontWeight: 500 }}>

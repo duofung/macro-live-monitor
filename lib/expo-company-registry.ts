@@ -14,11 +14,14 @@ export type RegisteredHistoricalCompany = {
   companyEn: string;
   hall: string;
   booth: string;
+  boothType: string;
+  area: string;
   hasOfficialSource: boolean;
   officialUrl?: string;
   officialSourceName?: string;
   segment?: string;
   candidateUrls: string[];
+  priority: "高优先" | "中优先" | "普通";
 };
 
 function normalizeCompanyName(value: string) {
@@ -89,6 +92,20 @@ function buildCandidateUrls(company: string, companyEn: string) {
   return uniqueStrings(urls).slice(0, 4);
 }
 
+function parseArea(area: string) {
+  const value = Number.parseFloat(area);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function inferPriority(hall: string, area: string): RegisteredHistoricalCompany["priority"] {
+  const areaValue = parseArea(area);
+  const hallPrefix = hall.toUpperCase();
+
+  if (areaValue >= 180 || /^E[1-3]$/.test(hallPrefix)) return "高优先";
+  if (areaValue >= 90 || /^E/.test(hallPrefix)) return "中优先";
+  return "普通";
+}
+
 export const historicalCompanyRegistry: RegisteredHistoricalCompany[] = historicalExhibitors.map((item) => {
   const source = findMatchingOfficialSource(item.company, item.companyEn);
 
@@ -97,15 +114,23 @@ export const historicalCompanyRegistry: RegisteredHistoricalCompany[] = historic
     companyEn: item.companyEn,
     hall: item.hall,
     booth: item.booth,
+    boothType: item.boothType,
+    area: item.area,
     hasOfficialSource: Boolean(source),
     officialUrl: source?.url,
     officialSourceName: source?.sourceName,
     segment: source?.segment,
     candidateUrls: source ? [source.url] : buildCandidateUrls(item.company, item.companyEn),
+    priority: inferPriority(item.hall, item.area),
   };
 });
 
-export const uncoveredHistoricalCompanies = historicalCompanyRegistry.filter((item) => !item.hasOfficialSource);
+export const uncoveredHistoricalCompanies = historicalCompanyRegistry
+  .filter((item) => !item.hasOfficialSource)
+  .sort((a, b) => {
+    const priorityWeight = { 高优先: 3, 中优先: 2, 普通: 1 };
+    return priorityWeight[b.priority] - priorityWeight[a.priority] || parseArea(b.area) - parseArea(a.area);
+  });
 
 export const registryStats: RegistryStats = {
   historicalCount: historicalCompanyRegistry.length,

@@ -37,6 +37,9 @@ export type ExpoRadarPayload = {
   uncoveredCompanyCandidates: Array<{
     company: string;
     companyEn: string;
+    hall: string;
+    area: string;
+    priority: "高优先" | "中优先" | "普通";
     candidateUrls: string[];
   }>;
 };

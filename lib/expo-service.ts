@@ -553,6 +553,9 @@ export async function getExpoRadarPayload(): Promise<ExpoRadarPayload> {
     uncoveredCompanyCandidates: uncoveredHistoricalCompanies.slice(0, 6).map((item) => ({
       company: item.company,
       companyEn: item.companyEn,
+      hall: item.hall,
+      area: item.area,
+      priority: item.priority,
       candidateUrls: item.candidateUrls,
     })),
   };
