@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { companySources } from "@/lib/expo-company-sources";
 import { fallbackExpoFeeds } from "@/lib/expo-data";
+import { historicalExhibitors } from "@/lib/historical-exhibitors";
 import type { ExpoRadarPayload, FeedItem } from "@/lib/expo-types";
 import { webSources } from "@/lib/expo-web-sources";
 
@@ -652,7 +653,7 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
           <div style={{ padding: "16px 20px", background: colors.light, borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600 }}>数据源 · 监控设置</div>
-              <div style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>官网源 + 平台源并行抓取；当前已覆盖 {companySources.length} 家企业官网与 {webSources.length} 个平台源</div>
+              <div style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>历史展商池 {historicalExhibitors.length} 家；官网源 {companySources.length} 家；平台源 {webSources.length} 个</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: colors.ok }} />

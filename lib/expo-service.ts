@@ -1,5 +1,6 @@
 import { companySources, type CompanySource } from "@/lib/expo-company-sources";
 import { fallbackExpoFeeds } from "@/lib/expo-data";
+import { historicalExhibitors } from "@/lib/historical-exhibitors";
 import type { ExpoRadarPayload, FeedItem } from "@/lib/expo-types";
 import { globalLeadKeywords, webSources, type WebSource } from "@/lib/expo-web-sources";
 
@@ -45,6 +46,36 @@ const COMPANY_MATCHERS = fallbackExpoFeeds.map((feed) => ({
   coEn: feed.coEn.toLowerCase(),
   expo: feed.expo.toLowerCase(),
 }));
+
+function normalizeCompanyName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/\(.*?\)|（.*?）/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, "")
+    .replace(/股份有限公司|有限责任公司|有限公司|集团股份|集团公司|集团|公司/g, "")
+    .replace(/co\.?ltd|co\.?,?ltd|co ltd|co,ltd|limited|holdings|technology|technologies|energy|solar|photovoltaic/gi, "");
+}
+
+function uniqueStrings(values: string[]) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+const HISTORICAL_EXHIBITOR_MATCHERS = historicalExhibitors.map((item) => {
+  const normalizedCompany = normalizeCompanyName(item.company);
+  const normalizedCompanyEn = normalizeCompanyName(item.companyEn);
+
+  return {
+    company: item.company,
+    aliases: uniqueStrings([
+      item.company.toLowerCase(),
+      item.companyEn.toLowerCase(),
+      normalizedCompany,
+      normalizedCompanyEn,
+    ]).filter((alias) => alias.length >= 2),
+  };
+});
+
+const HISTORICAL_EXHIBITOR_COMPANY_SET = new Set(historicalExhibitors.map((item) => item.company));
 
 function formatDate(dateLike: string) {
   const date = new Date(dateLike);
@@ -160,7 +191,21 @@ function inferExpoName(text: string) {
   return "待确认展会";
 }
 
+function findHistoricalExhibitorCompany(title: string) {
+  const normalizedTitle = title.toLowerCase();
+  const compactTitle = normalizeCompanyName(title);
+
+  const matched = HISTORICAL_EXHIBITOR_MATCHERS.find((item) =>
+    item.aliases.some((alias) => normalizedTitle.includes(alias) || compactTitle.includes(alias)),
+  );
+
+  return matched?.company ?? null;
+}
+
 function inferLeadCompany(title: string, sourceName: string) {
+  const historicalMatch = findHistoricalExhibitorCompany(title);
+  if (historicalMatch) return historicalMatch;
+
   const matchedCompany = companySources.find((source) => source.matchers.some((matcher) => title.toLowerCase().includes(matcher.toLowerCase())));
   if (matchedCompany) return matchedCompany.company;
 
@@ -450,15 +495,17 @@ export async function getExpoRadarPayload(): Promise<ExpoRadarPayload> {
   const additionalLeadFeeds = liveArticles
     .filter((article) => !usedUrls.has(article.url))
     .filter((article) => (article.score ?? 0) >= 8)
-    .slice(0, 12)
-    .map((article, index) => {
+    .map((article) => {
       const company = inferLeadCompany(article.title, article.source);
+      if (!HISTORICAL_EXHIBITOR_COMPANY_SET.has(company)) {
+        return null;
+      }
       const urgency = inferLeadUrgency(article.publishedAt, article.score);
       const deadline = deriveFollowupDeadline(article.publishedAt, urgency);
       const region = inferRegion(`${article.title} ${article.description}`);
 
       return {
-        id: 1000 + index,
+        id: 0,
         co: company,
         coEn: company,
         seg: inferLeadSegment(article.title),
@@ -483,7 +530,13 @@ export async function getExpoRadarPayload(): Promise<ExpoRadarPayload> {
         recordType: "全网线索",
         confidence: inferConfidence(article.score),
       } satisfies FeedItem;
-    });
+    })
+    .filter((feed): feed is NonNullable<typeof feed> => feed !== null)
+    .slice(0, 12)
+    .map((feed, index) => ({
+      ...feed,
+      id: 1000 + index,
+    }));
 
   const feeds = normalizeLeadFeeds([...existingFeeds, ...additionalLeadFeeds]);
 
