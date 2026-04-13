@@ -1,48 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-
-type FeedItem = {
-  id: number;
-  co: string;
-  coEn: string;
-  seg: string;
-  urg: "hot" | "active" | "upcoming";
-  title: string;
-  expo: string;
-  expoDate: string;
-  area: string;
-  budget: string;
-  deadline: string;
-  pubDate: string;
-  src: string;
-  srcUrl: string;
-  desc: string;
-  tags: string[];
-  region: "国内" | "海外";
-  bidding?: boolean;
-};
+import { fallbackExpoFeeds } from "@/lib/expo-data";
+import type { ExpoRadarPayload, FeedItem } from "@/lib/expo-types";
 
 declare global {
   interface Window {
     sendPrompt?: (prompt: string) => void;
   }
 }
-
-const FEEDS: FeedItem[] = [
-  { id: 1, co: "阳光电源", coEn: "Sungrow", seg: "逆变器/储能", urg: "hot", title: "SNEC 2026 展台特装搭建项目", expo: "SNEC PV&ES 2026 上海", expoDate: "2026.06.03-05", area: "~400㎡", budget: "¥200-350万", deadline: "2026.04.20", pubDate: "2026.04.08", src: "企业采购平台", srcUrl: "https://cn.sungrowpower.com", desc: "阳光电源SNEC 2026年度展台特装设计搭建，含主展台+储能展区，要求品牌视觉一致性，需提供3D效果图。", tags: ["特装搭建", "品牌展台", "双展区"], region: "国内" },
-  { id: 2, co: "晶科能源", coEn: "JinkoSolar", seg: "光伏组件", urg: "hot", title: "Intersolar Europe 2026 展台搭建招标", expo: "Intersolar Europe 2026 慕尼黑", expoDate: "2026.05.14-16", area: "~200㎡", budget: "€150-250K", deadline: "2026.04.18", pubDate: "2026.04.05", src: "企业采购公告", srcUrl: "https://www.jinkosolar.com", desc: "晶科能源Intersolar Europe展位特装设计搭建，海外项目，需在慕尼黑本地搭建。", tags: ["海外展", "欧洲", "光伏"], region: "海外" },
-  { id: 3, co: "宁德时代", coEn: "CATL", seg: "储能/动力电池", urg: "active", title: "2026年度展览服务框架采购", expo: "全年多展", expoDate: "2026全年", area: "框架", budget: "¥800-1500万/年", deadline: "2026.04.30", pubDate: "2026.04.01", src: "剑鱼标讯", srcUrl: "https://www.jianyu360.cn", desc: "宁德时代2026年度展览展示服务供应商入库采购，覆盖SNEC/CIBF/上海车展/国际储能展等。", tags: ["框架采购", "年度入库", "超大客户"], region: "国内" },
-  { id: 4, co: "隆基绿能", coEn: "LONGi", seg: "光伏组件", urg: "active", title: "SNEC 2026 主展位设计搭建", expo: "SNEC PV&ES 2026 上海", expoDate: "2026.06.03-05", area: "~500㎡", budget: "¥300-500万", deadline: "2026.04.25", pubDate: "2026.04.03", src: "中国招标网", srcUrl: "https://www.bidcenter.com.cn", desc: "隆基绿能SNEC 2026主展位特装搭建，含BC技术展示区、氢能展区、产品互动体验区。", tags: ["特装搭建", "超大展位", "多展区"], region: "国内" },
-  { id: 5, co: "特隆美", coEn: "Tecloman", seg: "储能系统", urg: "hot", title: "Smarter E 2026 慕尼黑展台搭建", expo: "Smarter E Europe 2026", expoDate: "2026.06.23-25", area: "170㎡", budget: "€80-120K", deadline: "2026.04.15", pubDate: "2026.03.20", src: "直接邀标", srcUrl: "https://www.tecloman.com", desc: "XpandExpo正在竞标！特隆美Smarter E慕尼黑展台设计搭建。", tags: ["海外展", "竞标中", "XpandExpo"], region: "海外", bidding: true },
-  { id: 6, co: "特隆美", coEn: "Tecloman", seg: "储能系统", urg: "hot", title: "SNEC 2026 展台特装搭建", expo: "SNEC PV&ES 2026 上海", expoDate: "2026.06.03-05", area: "300㎡", budget: "¥120-180万", deadline: "2026.04.20", pubDate: "2026.03.25", src: "直接邀标", srcUrl: "https://www.tecloman.com", desc: "XpandExpo正在竞标！特隆美SNEC上海主展位特装搭建。", tags: ["特装搭建", "竞标中", "XpandExpo"], region: "国内", bidding: true },
-  { id: 7, co: "海辰储能", coEn: "Hithium", seg: "储能电芯", urg: "active", title: "SNEC 2026 展台设计搭建比选", expo: "SNEC PV&ES 2026 上海", expoDate: "2026.06.03-05", area: "~200㎡", budget: "¥100-180万", deadline: "2026.04.22", pubDate: "2026.04.06", src: "乙方宝", srcUrl: "https://www.yfbzb.com", desc: "海辰储能SNEC展台特装搭建比选，储能电芯新势力展位。", tags: ["比选", "特装搭建", "新客户"], region: "国内" },
-  { id: 8, co: "比亚迪储能", coEn: "BYD ESS", seg: "储能系统", urg: "active", title: "ees Europe 2026 展台搭建", expo: "ees Europe 2026 慕尼黑", expoDate: "2026.05.14-16", area: "~300㎡", budget: "€200-350K", deadline: "2026.04.25", pubDate: "2026.04.09", src: "企业采购平台", srcUrl: "https://www.byd.com", desc: "比亚迪储能事业部ees Europe展台特装搭建。", tags: ["海外展", "欧洲", "超大客户"], region: "海外" },
-  { id: 9, co: "固德威", coEn: "GoodWe", seg: "逆变器", urg: "active", title: "Intersolar Europe 2026 展台搭建", expo: "Intersolar Europe 2026", expoDate: "2026.05.14-16", area: "~120㎡", budget: "€60-100K", deadline: "2026.04.20", pubDate: "2026.04.02", src: "企业采购", srcUrl: "https://www.goodwe.com", desc: "固德威Intersolar展台设计搭建，户用逆变器重点展示。", tags: ["海外展", "欧洲", "户用"], region: "海外" },
-  { id: 10, co: "天合光能", coEn: "Trina Solar", seg: "光伏组件", urg: "upcoming", title: "RE+ 2026 美国展台搭建询价", expo: "RE+ 2026 美国", expoDate: "2026.09", area: "~150㎡", budget: "$80-150K", deadline: "2026.05.15", pubDate: "2026.04.10", src: "企业官网", srcUrl: "https://www.trinasolar.com", desc: "天合光能RE+ 2026美国展台设计搭建。", tags: ["海外展", "美国", "询价"], region: "海外" },
-  { id: 11, co: "古瑞瓦特", coEn: "Growatt", seg: "逆变器", urg: "upcoming", title: "Solar Show Africa 2026 展台搭建", expo: "Solar Show Africa 2026", expoDate: "2026.10", area: "~80㎡", budget: "$30-50K", deadline: "2026.06.30", pubDate: "2026.04.12", src: "企业询价", srcUrl: "https://www.growatt.com", desc: "Growatt非洲太阳能展展台搭建。", tags: ["海外展", "非洲", "中小展位"], region: "海外" },
-  { id: 12, co: "锦浪科技", coEn: "Solis", seg: "逆变器", urg: "upcoming", title: "Intersolar South America 2026", expo: "Intersolar SA 2026 巴西", expoDate: "2026.08", area: "~100㎡", budget: "$40-70K", deadline: "2026.05.30", pubDate: "2026.04.11", src: "企业询价", srcUrl: "https://www.ginlong.com", desc: "锦浪科技南美Intersolar展台设计搭建。", tags: ["海外展", "南美"], region: "海外" },
-];
 
 const daysLeft = (d: string) => {
   if (!d || d.includes("全")) return 999;
@@ -139,9 +105,9 @@ function SignalCard({
         padding: "22px 20px",
         borderRadius: 18,
         textAlign: "left",
-        border: active ? `1.5px solid ${tone}` : "1px solid rgba(255,255,255,0.08)",
-        background: active ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
-        boxShadow: active ? `inset 0 0 0 1px ${tone}22` : "none",
+        border: active ? `1.5px solid ${tone}` : "1px solid rgba(255,255,255,0.09)",
+        background: active ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.045)",
+        boxShadow: active ? `0 0 0 1px ${tone}18 inset` : "0 10px 28px rgba(15,23,42,0.16)",
         backdropFilter: "blur(8px)",
       }}
     >
@@ -157,8 +123,8 @@ function SignalCard({
         }}
       />
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
-        <div style={{ fontSize: 12, color: "#94A3B8", letterSpacing: 0.3, marginBottom: 14 }}>{title}</div>
-        <div style={{ fontSize: 44, lineHeight: 1, fontWeight: 700, letterSpacing: -1.8, color: tone, fontFamily: "var(--font-mono)", marginBottom: 10 }}>
+        <div style={{ fontSize: 13, color: "#B6C2D2", letterSpacing: 0.2, marginBottom: 14, fontWeight: 500 }}>{title}</div>
+        <div style={{ fontSize: 44, lineHeight: 1, fontWeight: 700, letterSpacing: -1.8, color: tone, fontFamily: "\"JetBrains Mono\", var(--font-mono)", marginBottom: 10 }}>
           {value}
         </div>
         <div style={{ marginTop: "auto", fontSize: 12, color: "#94A3B8", lineHeight: 1.45 }}>{sub}</div>
@@ -244,18 +210,61 @@ function RadarMark() {
   );
 }
 
-export function ExpoRadar() {
+function formatSyncDate(dateLike: string) {
+  const date = new Date(dateLike);
+  if (Number.isNaN(date.getTime())) return "----.--.--";
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}.${mm}.${dd}`;
+}
+
+export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayload }) {
   const [filter, setFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
   const [expanded, setExpanded] = useState<number | null>(null);
   const [now, setNow] = useState("14:32");
+  const [feeds, setFeeds] = useState<FeedItem[]>(initialPayload?.feeds ?? fallbackExpoFeeds);
+  const [updatedAt, setUpdatedAt] = useState(initialPayload?.updatedAt ?? new Date().toISOString());
+  const [liveCount, setLiveCount] = useState(initialPayload?.liveCount ?? 0);
 
   useEffect(() => {
     setNow(new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }));
   }, []);
 
+  useEffect(() => {
+    if (!initialPayload) return;
+    setFeeds(initialPayload.feeds);
+    setUpdatedAt(initialPayload.updatedAt);
+    setLiveCount(initialPayload.liveCount);
+  }, [initialPayload]);
+
+  useEffect(() => {
+    let aborted = false;
+
+    async function refresh() {
+      try {
+        const response = await fetch("/api/expo-radar", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as ExpoRadarPayload;
+        if (aborted) return;
+        setFeeds(payload.feeds);
+        setUpdatedAt(payload.updatedAt);
+        setLiveCount(payload.liveCount);
+      } catch {
+        // Keep the current board state when live refresh fails.
+      }
+    }
+
+    const timer = window.setInterval(refresh, 5 * 60 * 1000);
+    return () => {
+      aborted = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
   const filtered = useMemo(() => {
-    let list = FEEDS;
+    let list = feeds;
 
     if (filter !== "all") list = list.filter((f) => f.urg === filter);
     if (regionFilter === "overseas") list = list.filter((f) => f.region === "海外");
@@ -263,28 +272,28 @@ export function ExpoRadar() {
     if (regionFilter === "bidding") list = list.filter((f) => f.bidding);
 
     return [...list].sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline));
-  }, [filter, regionFilter]);
+  }, [feeds, filter, regionFilter]);
 
   const stats = useMemo(() => {
-    const totalBudget = FEEDS.reduce((s, f) => s + fmtMoney(f.budget), 0);
+    const totalBudget = feeds.reduce((s, f) => s + fmtMoney(f.budget), 0);
     return {
-      total: FEEDS.length,
-      hot: FEEDS.filter((f) => f.urg === "hot").length,
-      active: FEEDS.filter((f) => f.urg === "active").length,
-      upcoming: FEEDS.filter((f) => f.urg === "upcoming").length,
-      bidding: FEEDS.filter((f) => f.bidding).length,
-      overseas: FEEDS.filter((f) => f.region === "海外").length,
+      total: feeds.length,
+      hot: feeds.filter((f) => f.urg === "hot").length,
+      active: feeds.filter((f) => f.urg === "active").length,
+      upcoming: feeds.filter((f) => f.urg === "upcoming").length,
+      bidding: feeds.filter((f) => f.bidding).length,
+      overseas: feeds.filter((f) => f.region === "海外").length,
       totalBudget: Math.round(totalBudget),
     };
-  }, []);
+  }, [feeds]);
 
-  const overseasRatio = Math.round((stats.overseas / stats.total) * 100);
+  const overseasRatio = stats.total > 0 ? Math.round((stats.overseas / stats.total) * 100) : 0;
   const domesticCount = stats.total - stats.overseas;
-  const latestPublishDate = useMemo(() => [...FEEDS].sort((a, b) => b.pubDate.localeCompare(a.pubDate))[0]?.pubDate ?? "", []);
-  const todayNewCount = useMemo(() => FEEDS.filter((item) => item.pubDate === latestPublishDate).length, [latestPublishDate]);
+  const latestPublishDate = useMemo(() => [...feeds].sort((a, b) => b.pubDate.localeCompare(a.pubDate))[0]?.pubDate ?? "", [feeds]);
+  const todayNewCount = useMemo(() => feeds.filter((item) => item.pubDate === latestPublishDate).length, [feeds, latestPublishDate]);
   const industryStats = useMemo(() => {
     return Object.entries(
-      FEEDS.reduce<Record<string, number>>((acc, item) => {
+      feeds.reduce<Record<string, number>>((acc, item) => {
         acc[item.seg] = (acc[item.seg] ?? 0) + 1;
         return acc;
       }, {}),
@@ -295,16 +304,16 @@ export function ExpoRadar() {
         label: industryLabels[segment] ?? segment,
         value: `${count}`,
       }));
-  }, []);
+  }, [feeds]);
 
   const actionBoard = useMemo(() => {
-    const sorted = [...FEEDS].sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline));
+    const sorted = [...feeds].sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline));
 
     return {
       thisWeek: sorted.filter((item) => daysLeft(item.deadline) > 3 && daysLeft(item.deadline) <= 10),
       pipeline: sorted.filter((item) => daysLeft(item.deadline) > 10).slice(0, 5),
     };
-  }, []);
+  }, [feeds]);
 
   const projectRows = useMemo(() => {
     const rows: FeedItem[][] = [];
@@ -318,7 +327,7 @@ export function ExpoRadar() {
       title: "今日焦点",
       subtitle: "最需要今天处理的项目",
       tone: colors.accent,
-      items: [...FEEDS].sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline)).slice(0, 3),
+      items: [...feeds].sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline)).slice(0, 3),
     },
     {
       key: "week",
@@ -342,6 +351,8 @@ export function ExpoRadar() {
       stats: industryStats,
     },
   ] as const;
+
+  const syncDate = formatSyncDate(updatedAt);
 
   return (
     <div style={{ minHeight: "100vh", background: colors.bg, padding: 24 }}>
@@ -398,7 +409,8 @@ export function ExpoRadar() {
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 11, color: "#64748B", marginBottom: 4 }}>最近同步</div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 600, color: "#E2E8F0" }}>{now}</div>
-                <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>2026.04.13</div>
+                <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>{syncDate}</div>
+                <div style={{ fontSize: 10, color: liveCount > 0 ? "#19f0ba" : "#475569", marginTop: 4 }}>{liveCount > 0 ? `${liveCount} 条实时命中` : "未命中实时资讯"}</div>
               </div>
             </div>
 
@@ -512,7 +524,14 @@ export function ExpoRadar() {
                       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: u.dot, borderRadius: "18px 0 0 18px" }} />
                       <div style={{ padding: "18px 18px 18px 22px", display: "flex", flexDirection: "column", height: "100%" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-                          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, padding: "3px 10px", borderRadius: 999, background: u.bg, color: u.dot, border: `1px solid ${u.border}` }}>{u.label}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, padding: "3px 10px", borderRadius: 999, background: u.bg, color: u.dot, border: `1px solid ${u.border}` }}>{u.label}</span>
+                            {f.isLive ? (
+                              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.3, padding: "3px 10px", borderRadius: 999, background: "rgba(25,240,186,0.12)", color: "#089981", border: "1px solid rgba(25,240,186,0.35)" }}>
+                                实时命中
+                              </span>
+                            ) : null}
+                          </div>
                           <Deadline d={f.deadline} />
                         </div>
 
@@ -520,6 +539,12 @@ export function ExpoRadar() {
                         <div style={{ fontSize: 12, color: colors.muted, marginBottom: 14 }}>{f.coEn}</div>
 
                         <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.5, minHeight: 64, marginBottom: 14 }}>{f.title}</div>
+                        {f.liveHeadline ? (
+                          <div style={{ marginBottom: 14, padding: "10px 12px", borderRadius: 12, background: "rgba(0,102,255,0.06)", border: "1px solid rgba(0,102,255,0.12)" }}>
+                            <div style={{ fontSize: 10, color: colors.accent, fontWeight: 700, letterSpacing: 0.3, marginBottom: 6 }}>实时资讯</div>
+                            <div style={{ fontSize: 12, color: colors.sub, lineHeight: 1.6 }}>{f.liveHeadline}</div>
+                          </div>
+                        ) : null}
 
                         <div style={{ display: "grid", gap: 10, marginBottom: 14 }}>
                           {[
