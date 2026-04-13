@@ -235,6 +235,7 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
   const [liveCount, setLiveCount] = useState(initialPayload?.liveCount ?? 0);
   const [registryStats, setRegistryStats] = useState(initialPayload?.registryStats ?? { ...fallbackRegistryStats, platformCount: webSources.length });
   const [uncoveredCompanies, setUncoveredCompanies] = useState(initialPayload?.uncoveredCompanies ?? []);
+  const [uncoveredCompanyCandidates, setUncoveredCompanyCandidates] = useState(initialPayload?.uncoveredCompanyCandidates ?? []);
 
   useEffect(() => {
     setNow(new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }));
@@ -247,6 +248,7 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
     setLiveCount(initialPayload.liveCount);
     setRegistryStats(initialPayload.registryStats);
     setUncoveredCompanies(initialPayload.uncoveredCompanies);
+    setUncoveredCompanyCandidates(initialPayload.uncoveredCompanyCandidates);
   }, [initialPayload]);
 
   useEffect(() => {
@@ -263,6 +265,7 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
         setLiveCount(payload.liveCount);
         setRegistryStats(payload.registryStats);
         setUncoveredCompanies(payload.uncoveredCompanies);
+        setUncoveredCompanyCandidates(payload.uncoveredCompanyCandidates);
       } catch {
         // Keep the current board state when live refresh fails.
       }
@@ -710,15 +713,24 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
               </a>
             ))}
           </div>
-          {uncoveredCompanies.length > 0 ? (
+          {uncoveredCompanyCandidates.length > 0 ? (
             <div style={{ padding: "0 16px 16px" }}>
               <div style={{ padding: "14px 16px", borderRadius: 12, border: `1px solid ${colors.border}`, background: "#FFFDF5" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>待补官网企业</div>
-                <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {uncoveredCompanies.map((company) => (
-                    <span key={company} style={{ fontSize: 11, padding: "5px 9px", borderRadius: 999, background: "#FFF7ED", color: "#9A3412", fontWeight: 500 }}>
-                      {company}
-                    </span>
+                <div style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>待补官网候选池</div>
+                <div style={{ marginTop: 4, fontSize: 11, color: colors.muted }}>先基于企业中英文名自动推断候选官网，后续再逐个核验。</div>
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  {uncoveredCompanyCandidates.map((item) => (
+                    <div key={item.company} style={{ padding: "12px 12px", borderRadius: 10, background: "#FFFFFF", border: `1px solid ${colors.border}` }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>{item.company}</div>
+                      <div style={{ marginTop: 2, fontSize: 11, color: colors.muted }}>{item.companyEn}</div>
+                      <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {item.candidateUrls.map((url) => (
+                          <span key={url} style={{ fontSize: 10, padding: "4px 8px", borderRadius: 999, background: "#EEF2FF", color: "#4338CA", fontWeight: 500 }}>
+                            {url.replace(/^https?:\/\//, "")}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

@@ -550,6 +550,11 @@ export async function getExpoRadarPayload(): Promise<ExpoRadarPayload> {
       platformCount: webSources.length,
     },
     uncoveredCompanies: uncoveredHistoricalCompanies.slice(0, 8).map((item) => item.company),
+    uncoveredCompanyCandidates: uncoveredHistoricalCompanies.slice(0, 6).map((item) => ({
+      company: item.company,
+      companyEn: item.companyEn,
+      candidateUrls: item.candidateUrls,
+    })),
   };
 }
 

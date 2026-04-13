@@ -14,6 +14,11 @@ function getFallbackPayload(): ExpoRadarPayload {
     liveCount: 0,
     registryStats,
     uncoveredCompanies: uncoveredHistoricalCompanies.slice(0, 8).map((item) => item.company),
+    uncoveredCompanyCandidates: uncoveredHistoricalCompanies.slice(0, 6).map((item) => ({
+      company: item.company,
+      companyEn: item.companyEn,
+      candidateUrls: item.candidateUrls,
+    })),
   };
 }
 

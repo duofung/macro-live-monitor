@@ -34,4 +34,9 @@ export type ExpoRadarPayload = {
   liveCount: number;
   registryStats: RegistryStats;
   uncoveredCompanies: string[];
+  uncoveredCompanyCandidates: Array<{
+    company: string;
+    companyEn: string;
+    candidateUrls: string[];
+  }>;
 };

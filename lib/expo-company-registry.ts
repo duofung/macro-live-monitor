@@ -18,6 +18,7 @@ export type RegisteredHistoricalCompany = {
   officialUrl?: string;
   officialSourceName?: string;
   segment?: string;
+  candidateUrls: string[];
 };
 
 function normalizeCompanyName(value: string) {
@@ -27,6 +28,10 @@ function normalizeCompanyName(value: string) {
     .replace(/[^\p{L}\p{N}]+/gu, "")
     .replace(/股份有限公司|有限责任公司|有限公司|集团股份|集团公司|集团|公司/g, "")
     .replace(/co\.?ltd|co\.?,?ltd|co ltd|co,ltd|limited|holdings|technology|technologies|energy|solar|photovoltaic/gi, "");
+}
+
+function uniqueStrings(values: string[]) {
+  return [...new Set(values.filter(Boolean))];
 }
 
 function findMatchingOfficialSource(company: string, companyEn: string) {
@@ -49,6 +54,41 @@ function findMatchingOfficialSource(company: string, companyEn: string) {
   );
 }
 
+function buildDomainTokens(company: string, companyEn: string) {
+  const englishBase = companyEn
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/\b(co|ltd|limited|inc|corp|corporation|technology|technologies|energy|solar|photovoltaic|new|materials|international)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const englishJoined = englishBase.replace(/\s+/g, "");
+  const englishHyphen = englishBase.replace(/\s+/g, "-");
+  const englishParts = englishBase.split(" ").filter((part) => part.length >= 3);
+  const chinesePinyinHint = normalizeCompanyName(company);
+
+  return uniqueStrings([
+    englishJoined,
+    englishHyphen,
+    englishParts.slice(0, 2).join(""),
+    englishParts.slice(0, 2).join("-"),
+    englishParts.at(0) ?? "",
+    chinesePinyinHint,
+  ]).filter((token) => token.length >= 4);
+}
+
+function buildCandidateUrls(company: string, companyEn: string) {
+  const tokens = buildDomainTokens(company, companyEn).slice(0, 3);
+  const urls = tokens.flatMap((token) => [
+    `https://www.${token}.com`,
+    `https://${token}.com`,
+    `https://www.${token}.cn`,
+    `https://${token}.cn`,
+  ]);
+
+  return uniqueStrings(urls).slice(0, 4);
+}
+
 export const historicalCompanyRegistry: RegisteredHistoricalCompany[] = historicalExhibitors.map((item) => {
   const source = findMatchingOfficialSource(item.company, item.companyEn);
 
@@ -61,6 +101,7 @@ export const historicalCompanyRegistry: RegisteredHistoricalCompany[] = historic
     officialUrl: source?.url,
     officialSourceName: source?.sourceName,
     segment: source?.segment,
+    candidateUrls: source ? [source.url] : buildCandidateUrls(item.company, item.companyEn),
   };
 });
 
