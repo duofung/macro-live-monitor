@@ -114,54 +114,56 @@ function Deadline({ d }: { d: string }) {
   return <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: colors.ok }}>{n}d</span>;
 }
 
-function StatCard({
-  label,
+function SignalCard({
+  title,
   value,
   sub,
-  color,
+  tone,
   active,
   onClick,
 }: {
-  label: string;
+  title: string;
   value: number | string;
-  sub?: string;
-  color: string;
+  sub: string;
+  tone: string;
   active?: boolean;
   onClick?: () => void;
 }) {
   return (
-    <div
+    <button
       onClick={onClick}
       style={{
-        background: active ? `${color}12` : colors.card,
-        borderRadius: 14,
-        padding: "16px 18px",
-        border: active ? `1.5px solid ${color}` : `1px solid ${colors.border}`,
-        cursor: "pointer",
-        transition: "all 0.2s",
         position: "relative",
         overflow: "hidden",
+        minHeight: 156,
+        padding: "22px 20px",
+        borderRadius: 18,
+        textAlign: "left",
+        border: active ? `1.5px solid ${tone}` : "1px solid rgba(255,255,255,0.08)",
+        background: active ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
+        boxShadow: active ? `inset 0 0 0 1px ${tone}22` : "none",
+        backdropFilter: "blur(8px)",
       }}
     >
       <div
         style={{
           position: "absolute",
-          top: 0,
-          right: 0,
-          width: 60,
-          height: 60,
-          borderRadius: "0 14px 0 60px",
-          background: `${color}08`,
+          top: -26,
+          right: -22,
+          width: 88,
+          height: 88,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${tone}16 0%, transparent 72%)`,
         }}
       />
-      <div style={{ fontSize: 11, color: colors.sub, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 8, fontWeight: 500 }}>
-        {label}
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
+        <div style={{ fontSize: 12, color: "#94A3B8", letterSpacing: 0.3, marginBottom: 14 }}>{title}</div>
+        <div style={{ fontSize: 44, lineHeight: 1, fontWeight: 700, letterSpacing: -1.8, color: tone, fontFamily: "var(--font-mono)", marginBottom: 10 }}>
+          {value}
+        </div>
+        <div style={{ marginTop: "auto", fontSize: 12, color: "#94A3B8", lineHeight: 1.45 }}>{sub}</div>
       </div>
-      <div style={{ fontSize: 28, fontWeight: 600, color, fontFamily: "var(--font-mono)", letterSpacing: -1, lineHeight: 1 }}>
-        {value}
-      </div>
-      {sub ? <div style={{ fontSize: 11, color: colors.muted, marginTop: 6 }}>{sub}</div> : null}
-    </div>
+    </button>
   );
 }
 
@@ -475,10 +477,10 @@ export function ExpoRadar() {
         </div>
 
         <div className="expo-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px,1fr))", gap: 12, marginBottom: 20 }}>
-          <StatCard label="今日新增" value={todayNewCount} sub={`最新录入日 ${latestPublishDate || "--"}`} color={colors.accent} />
-          <StatCard label="国内展" value={domesticCount} sub="当前国内项目总数" color={colors.warn} active={regionFilter === "domestic"} onClick={() => setRegionFilter(regionFilter === "domestic" ? "all" : "domestic")} />
-          <StatCard label="国外展" value={stats.overseas} sub={`海外占比 ${overseasRatio}%`} color={"#8B5CF6"} active={regionFilter === "overseas"} onClick={() => setRegionFilter(regionFilter === "overseas" ? "all" : "overseas")} />
-          <StatCard label="预计发出" value={stats.upcoming} sub="提前布局项目" color={colors.ok} active={filter === "upcoming"} onClick={() => setFilter(filter === "upcoming" ? "all" : "upcoming")} />
+          <SignalCard title="今日新增" value={todayNewCount} sub={`最新录入日 ${latestPublishDate || "--"}`} tone="#16A3FF" />
+          <SignalCard title="国内展" value={domesticCount} sub="当前国内项目总数" tone="#F59E0B" active={regionFilter === "domestic"} onClick={() => setRegionFilter(regionFilter === "domestic" ? "all" : "domestic")} />
+          <SignalCard title="国外展" value={stats.overseas} sub={`海外占比 ${overseasRatio}%`} tone="#2563EB" active={regionFilter === "overseas"} onClick={() => setRegionFilter(regionFilter === "overseas" ? "all" : "overseas")} />
+          <SignalCard title="预计发出" value={stats.upcoming} sub="提前布局项目" tone="#10B981" active={filter === "upcoming"} onClick={() => setFilter(filter === "upcoming" ? "all" : "upcoming")} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 18, marginBottom: 20 }}>
           {projectRows.map((row, rowIndex) => {
