@@ -165,26 +165,6 @@ function StatCard({
   );
 }
 
-function SectionHeader({
-  index,
-  title,
-  subtitle,
-}: {
-  index: string;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 12 }}>
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: colors.accent, fontFamily: "var(--font-mono)" }}>{index}</div>
-        <div style={{ marginTop: 2, fontSize: 20, fontWeight: 700, letterSpacing: -0.5 }}>{title}</div>
-      </div>
-      <div style={{ fontSize: 12, color: colors.sub, maxWidth: 560, lineHeight: 1.6 }}>{subtitle}</div>
-    </div>
-  );
-}
-
 export function ExpoRadar() {
   const [filter, setFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
@@ -224,20 +204,6 @@ export function ExpoRadar() {
     };
   }, []);
 
-  const topUrgent = useMemo(() => [...FEEDS].sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline)).slice(0, 4), []);
-
-  const segmentStats = useMemo(() => {
-    return Object.entries(
-      FEEDS.reduce<Record<string, { count: number; hot: number }>>((acc, item) => {
-        const current = acc[item.seg] ?? { count: 0, hot: 0 };
-        current.count += 1;
-        if (item.urg === "hot") current.hot += 1;
-        acc[item.seg] = current;
-        return acc;
-      }, {}),
-    ).sort((a, b) => b[1].count - a[1].count);
-  }, []);
-
   const groupedFeeds = useMemo(() => {
     const grouped = filtered.reduce<Record<string, FeedItem[]>>((acc, item) => {
       acc[item.seg] ??= [];
@@ -253,36 +219,17 @@ export function ExpoRadar() {
   }, [filtered]);
 
   const overseasRatio = Math.round((stats.overseas / stats.total) * 100);
-  const actionNotes = [
-    { title: "本周优先跟进", body: "特隆美双项目和晶科慕尼黑项目最接近截标，优先出概念方案和预算框架。", color: colors.hot },
-    { title: "客户层级建议", body: "宁德时代、隆基、比亚迪适合走长期框架和高层拜访；海辰、固德威适合快速响应。", color: colors.accent },
-    { title: "海外执行准备", body: "慕尼黑与美国项目需要本地施工资源池、物流时程和双语提案模板同步准备。", color: colors.ok },
-  ];
-
-  const workflowSteps = [
-    { id: "01", title: "先看全局", body: "指挥中枢先回答今天最急的项目是谁、海外占比有多高、哪条品类线最热。", tone: colors.accent },
-    { id: "02", title: "再排动作", body: "作战板把项目拆成立即处理、本周推进和储备项目，避免所有线索混在一起。", tone: colors.warn },
-    { id: "03", title: "最后下钻", body: "进入分组项目池后，再展开单个项目查看预算、展会信息和后续 AI 动作。", tone: colors.ok },
-  ];
+  const domesticCount = stats.total - stats.overseas;
+  const latestPublishDate = useMemo(() => [...FEEDS].sort((a, b) => b.pubDate.localeCompare(a.pubDate))[0]?.pubDate ?? "", []);
+  const todayNewCount = useMemo(() => FEEDS.filter((item) => item.pubDate === latestPublishDate).length, [latestPublishDate]);
 
   const actionBoard = useMemo(() => {
     const sorted = [...FEEDS].sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline));
 
     return {
-      immediate: sorted.filter((item) => daysLeft(item.deadline) <= 3),
       thisWeek: sorted.filter((item) => daysLeft(item.deadline) > 3 && daysLeft(item.deadline) <= 10),
       pipeline: sorted.filter((item) => daysLeft(item.deadline) > 10).slice(0, 5),
     };
-  }, []);
-
-  const deadlineTimeline = useMemo(() => {
-    return [...FEEDS]
-      .sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline))
-      .slice(0, 6)
-      .map((item) => ({
-        ...item,
-        left: Math.max(daysLeft(item.deadline), 0),
-      }));
   }, []);
 
   return (
@@ -425,191 +372,11 @@ export function ExpoRadar() {
         </div>
 
         <div className="expo-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px,1fr))", gap: 12, marginBottom: 20 }}>
-          <StatCard label="紧急响应" value={stats.hot} sub="需 7 天内截标" color={colors.hot} active={filter === "hot"} onClick={() => setFilter(filter === "hot" ? "all" : "hot")} />
-          <StatCard label="进行中" value={stats.active} sub="可跟进项目" color={colors.warn} active={filter === "active"} onClick={() => setFilter(filter === "active" ? "all" : "active")} />
-          <StatCard label="XpandExpo 竞标" value={stats.bidding} sub="特隆美 SNEC + 慕尼黑" color={colors.accent} active={regionFilter === "bidding"} onClick={() => setRegionFilter(regionFilter === "bidding" ? "all" : "bidding")} />
-          <StatCard label="即将开放" value={stats.upcoming} sub="提前布局" color={colors.ok} active={filter === "upcoming"} onClick={() => setFilter(filter === "upcoming" ? "all" : "upcoming")} />
+          <StatCard label="今日新增" value={todayNewCount} sub={`最新录入日 ${latestPublishDate || "--"}`} color={colors.accent} />
+          <StatCard label="国内展" value={domesticCount} sub="当前国内项目总数" color={colors.warn} active={regionFilter === "domestic"} onClick={() => setRegionFilter(regionFilter === "domestic" ? "all" : "domestic")} />
+          <StatCard label="国外展" value={stats.overseas} sub={`海外占比 ${overseasRatio}%`} color={"#8B5CF6"} active={regionFilter === "overseas"} onClick={() => setRegionFilter(regionFilter === "overseas" ? "all" : "overseas")} />
+          <StatCard label="预计发出" value={stats.upcoming} sub="提前布局项目" color={colors.ok} active={filter === "upcoming"} onClick={() => setFilter(filter === "upcoming" ? "all" : "upcoming")} />
         </div>
-
-        <SectionHeader
-          index="01"
-          title="今日工作流"
-          subtitle="先建立优先级，再进入具体项目。页面从这里开始就不再是普通列表，而是按真实业务动作往下走。"
-        />
-        <div className="expo-workflow-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
-          {workflowSteps.map((step) => (
-            <div key={step.id} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 999, background: `${step.tone}14`, color: step.tone, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontFamily: "var(--font-mono)" }}>
-                  {step.id}
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>{step.title}</div>
-              </div>
-              <div style={{ fontSize: 12, color: colors.sub, lineHeight: 1.7 }}>{step.body}</div>
-            </div>
-          ))}
-        </div>
-
-        <SectionHeader
-          index="02"
-          title="指挥中枢"
-          subtitle="这一层只做判断，不做细节。用来决定今天团队资源先压在哪些客户、哪些区域、哪些展会。"
-        />
-        <div className="expo-command-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.25fr) minmax(0, 1fr)", gap: 16, marginBottom: 20 }}>
-          <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap", marginBottom: 16 }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>指挥中枢</div>
-                <div style={{ marginTop: 4, fontSize: 12, color: colors.sub }}>先看最急项目、区域结构和品类热度，再进入分组列表逐项处理。</div>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  onClick={() => window.sendPrompt?.("根据当前ExpoRadar项目池，帮我生成本周销售跟进清单，按紧急度、客户等级、海外执行难度排序。")}
-                  style={{ padding: "9px 14px", borderRadius: 10, border: "none", background: colors.text, color: "#fff", fontSize: 12, fontWeight: 600 }}
-                >
-                  生成跟进清单 ↗
-                </button>
-                <button
-                  onClick={() => window.sendPrompt?.("针对ExpoRadar中的海外项目，帮我生成双语提案材料准备列表，包括方案、预算、物流、施工和本地合作方。")}
-                  style={{ padding: "9px 14px", borderRadius: 10, border: `1px solid ${colors.border}`, background: colors.card, color: colors.text, fontSize: 12, fontWeight: 600 }}
-                >
-                  生成双语准备项 ↗
-                </button>
-              </div>
-            </div>
-
-            <div className="expo-command-stats" style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 16 }}>
-              <div style={{ background: colors.light, borderRadius: 16, padding: 16 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>今日焦点</div>
-                <div style={{ fontSize: 12, color: colors.sub, lineHeight: 1.6, marginBottom: 16 }}>
-                  先抢 7 天内截标项目，再按海外执行难度和客户体量做资源分配。
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {topUrgent.map((item, index) => (
-                    <div key={item.id} style={{ display: "grid", gridTemplateColumns: "20px 1fr auto", gap: 10, alignItems: "center" }}>
-                      <div style={{ width: 20, height: 20, borderRadius: 999, background: index === 0 ? colors.hotBg : colors.card, color: index === 0 ? colors.hot : colors.sub, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700 }}>
-                        {index + 1}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 600 }}>{item.co}</div>
-                        <div style={{ fontSize: 11, color: colors.muted }}>{item.title}</div>
-                      </div>
-                      <Deadline d={item.deadline} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ background: colors.light, borderRadius: 16, padding: 16 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>区域分布</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center", marginBottom: 12 }}>
-                    <div style={{ height: 10, background: colors.card, borderRadius: 999, overflow: "hidden" }}>
-                      <div style={{ width: `${overseasRatio}%`, height: "100%", background: "linear-gradient(90deg, #8B5CF6, #0066FF)" }} />
-                    </div>
-                    <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: colors.text }}>{overseasRatio}% 海外</div>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
-                    <div style={{ background: colors.card, borderRadius: 12, padding: 12 }}>
-                      <div style={{ fontSize: 11, color: colors.muted }}>国内项目</div>
-                      <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{stats.total - stats.overseas}</div>
-                    </div>
-                    <div style={{ background: colors.card, borderRadius: 12, padding: 12 }}>
-                      <div style={{ fontSize: 11, color: colors.muted }}>海外项目</div>
-                      <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{stats.overseas}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ background: colors.light, borderRadius: 16, padding: 16 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>品类热度</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {segmentStats.map(([segment, value]) => (
-                      <div key={segment}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
-                          <span style={{ fontSize: 12, fontWeight: 500 }}>{segment}</span>
-                          <span style={{ fontSize: 11, color: colors.muted }}>{value.count} 项 / {value.hot} 紧急</span>
-                        </div>
-                        <div style={{ height: 8, background: colors.card, borderRadius: 999, overflow: "hidden" }}>
-                          <div style={{ width: `${(value.count / stats.total) * 100}%`, height: "100%", background: value.hot > 0 ? `linear-gradient(90deg, ${colors.hot}, ${colors.accent})` : colors.accent }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>截标时间轴</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {deadlineTimeline.map((item) => (
-                <div key={item.id} style={{ display: "grid", gridTemplateColumns: "62px 1fr auto", gap: 10, alignItems: "center" }}>
-                  <div style={{ fontSize: 11, color: colors.muted, fontFamily: "var(--font-mono)" }}>{item.deadline}</div>
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 600 }}>{item.co}</div>
-                    <div style={{ fontSize: 11, color: colors.sub }}>{item.expo}</div>
-                  </div>
-                  <div style={{ fontSize: 11, padding: "4px 8px", borderRadius: 999, background: item.left <= 3 ? colors.hotBg : colors.light, color: item.left <= 3 ? colors.hot : colors.sub, fontWeight: 600 }}>
-                    D-{item.left}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <SectionHeader
-          index="03"
-          title="本周作战板"
-          subtitle="把所有机会按节奏拆开。先处理临门一脚，再安排一周内能推进的项目，最后保留储备池。"
-        />
-        <div className="expo-action-board" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16, marginBottom: 20 }}>
-          {[
-            { title: "立即处理", subtitle: "3 天内截标", tone: colors.hot, items: actionBoard.immediate },
-            { title: "本周推进", subtitle: "4-10 天内", tone: colors.warn, items: actionBoard.thisWeek },
-            { title: "储备项目", subtitle: "10 天后", tone: colors.ok, items: actionBoard.pipeline },
-          ].map((column) => (
-            <div key={column.title} style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, overflow: "hidden" }}>
-              <div style={{ padding: "16px 18px", borderBottom: `1px solid ${colors.border}`, background: `${column.tone}10` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: column.tone }}>{column.title}</div>
-                    <div style={{ marginTop: 4, fontSize: 11, color: colors.sub }}>{column.subtitle}</div>
-                  </div>
-                  <div style={{ fontSize: 18, fontFamily: "var(--font-mono)", fontWeight: 700, color: column.tone }}>{column.items.length}</div>
-                </div>
-              </div>
-              <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, minHeight: 240 }}>
-                {column.items.length === 0 ? (
-                  <div style={{ fontSize: 12, color: colors.muted, padding: 16 }}>当前没有项目。</div>
-                ) : (
-                  column.items.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setExpanded(item.id)}
-                      style={{ textAlign: "left", border: `1px solid ${colors.border}`, background: colors.light, borderRadius: 14, padding: "12px 14px" }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                        <span style={{ fontSize: 12, fontWeight: 700 }}>{item.co}</span>
-                        <Deadline d={item.deadline} />
-                      </div>
-                      <div style={{ marginTop: 6, fontSize: 12, color: colors.sub, lineHeight: 1.55 }}>{item.title}</div>
-                      <div style={{ marginTop: 8, fontSize: 11, color: colors.muted }}>{item.expo}</div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <SectionHeader
-          index="04"
-          title="项目池"
-          subtitle="进入这里再展开单个项目详情。品类分组保留业务语义，避免所有企业和展会平铺在一条长列表里。"
-        />
         <div style={{ marginBottom: 16, position: "relative" }}>
           <input
             value={searchQ}
@@ -818,25 +585,53 @@ export function ExpoRadar() {
           </div>
 
           <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, padding: 18 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>行动建议</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {actionNotes.map((note) => (
-                  <div key={note.title} style={{ padding: 14, borderRadius: 14, background: `${note.color}10`, border: `1px solid ${note.color}22` }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: note.color, marginBottom: 6 }}>{note.title}</div>
-                    <div style={{ fontSize: 12, color: colors.sub, lineHeight: 1.65 }}>{note.body}</div>
-                  </div>
+            <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, overflow: "hidden" }}>
+              <div style={{ padding: "16px 18px", borderBottom: `1px solid ${colors.border}`, background: `${colors.warn}10` }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: colors.warn }}>本周推荐</div>
+                <div style={{ marginTop: 4, fontSize: 11, color: colors.sub }}>适合本周重点跟进的项目</div>
+              </div>
+              <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                {actionBoard.thisWeek.slice(0, 4).map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setExpanded(item.id)}
+                    style={{ textAlign: "left", border: `1px solid ${colors.border}`, background: colors.light, borderRadius: 14, padding: "12px 14px" }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>{item.co}</span>
+                      <Deadline d={item.deadline} />
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 12, color: colors.sub, lineHeight: 1.55 }}>{item.title}</div>
+                    <div style={{ marginTop: 8, fontSize: 11, color: colors.muted }}>{item.expo}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 18, overflow: "hidden" }}>
+              <div style={{ padding: "16px 18px", borderBottom: `1px solid ${colors.border}`, background: `${colors.ok}10` }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: colors.ok }}>储备项目</div>
+                <div style={{ marginTop: 4, fontSize: 11, color: colors.sub }}>适合提前布局和准备素材的项目</div>
+              </div>
+              <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                {actionBoard.pipeline.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setExpanded(item.id)}
+                    style={{ textAlign: "left", border: `1px solid ${colors.border}`, background: colors.light, borderRadius: 14, padding: "12px 14px" }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>{item.co}</span>
+                      <Deadline d={item.deadline} />
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 12, color: colors.sub, lineHeight: 1.55 }}>{item.title}</div>
+                    <div style={{ marginTop: 8, fontSize: 11, color: colors.muted }}>{item.expo}</div>
+                  </button>
                 ))}
               </div>
             </div>
           </aside>
         </div>
-
-        <SectionHeader
-          index="05"
-          title="数据源与自动化"
-          subtitle="最后一层是监控来源和自动化能力。这里不是看项目，而是配置系统如何持续给你产出线索。"
-        />
         <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${colors.border}`, background: colors.card }}>
           <div style={{ padding: "16px 20px", background: colors.light, borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
@@ -891,15 +686,11 @@ export function ExpoRadar() {
           @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
           @media (max-width: 1100px) {
             .expo-main-grid { grid-template-columns: 1fr !important; }
-            .expo-command-grid { grid-template-columns: 1fr !important; }
-            .expo-action-board { grid-template-columns: 1fr !important; }
-            .expo-workflow-grid { grid-template-columns: 1fr !important; }
             .expo-source-grid { grid-template-columns: 1fr !important; }
           }
           @media (max-width: 720px) {
             .expo-hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
             .expo-summary-grid { grid-template-columns: 1fr !important; }
-            .expo-command-stats { grid-template-columns: 1fr !important; }
           }
           @media (max-width: 560px) {
             .expo-hero-stats { grid-template-columns: 1fr !important; }
