@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { companySources } from "@/lib/expo-company-sources";
 import { fallbackExpoFeeds } from "@/lib/expo-data";
 import type { ExpoRadarPayload, FeedItem } from "@/lib/expo-types";
 
@@ -56,6 +57,8 @@ const monitorSources = [
   { name: "中国招标网", url: "https://www.bidcenter.com.cn", kw: "新能源企业名 + 展览", status: "补充" },
   { name: "中国采购与招标网", url: "https://chinabidding.com.cn", kw: "展览展示 · 搭建施工", status: "补充" },
 ];
+
+const totalMonitorSourceCount = companySources.length + 2;
 
 const industryLabels: Record<string, string> = {
   "光伏组件": "组件",
@@ -638,11 +641,11 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
           <div style={{ padding: "16px 20px", background: colors.light, borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600 }}>数据源 · 监控设置</div>
-              <div style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>在以下平台设置关键词订阅，实现自动推送</div>
+              <div style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>官网源优先，聚合源补充；当前已覆盖 {companySources.length} 家企业官网</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: colors.ok }} />
-              <span style={{ fontSize: 11, color: colors.ok, fontWeight: 500 }}>3 源已配置</span>
+              <span style={{ fontSize: 11, color: colors.ok, fontWeight: 500 }}>{totalMonitorSourceCount} 源已配置</span>
             </div>
           </div>
           <div className="expo-source-grid" style={{ padding: 16, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>

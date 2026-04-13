@@ -1,5 +1,6 @@
 export type CompanySource = {
   company: string;
+  segment?: string;
   url: string;
   sourceName: string;
   keywords: string[];
@@ -12,6 +13,7 @@ export type CompanySource = {
 export const companySources: CompanySource[] = [
   {
     company: "阳光电源",
+    segment: "逆变器/储能",
     sourceName: "阳光电源官网",
     url: "https://cn.sungrowpower.com/newsList",
     keywords: ["SNEC", "展会", "储能", "新品", "上海"],
@@ -22,6 +24,7 @@ export const companySources: CompanySource[] = [
   },
   {
     company: "晶科能源",
+    segment: "光伏组件",
     sourceName: "晶科能源官网",
     url: "https://www.jinkosolar.com/news",
     keywords: ["Intersolar", "欧洲", "组件", "展会", "慕尼黑"],
@@ -32,6 +35,7 @@ export const companySources: CompanySource[] = [
   },
   {
     company: "宁德时代",
+    segment: "储能/动力电池",
     sourceName: "宁德时代官网",
     url: "https://www.catl.com/news/",
     keywords: ["储能", "展会", "论坛", "发布", "电池"],
@@ -42,6 +46,7 @@ export const companySources: CompanySource[] = [
   },
   {
     company: "隆基绿能",
+    segment: "光伏组件",
     sourceName: "隆基官网",
     url: "https://www.longi.com/cn/news/",
     keywords: ["SNEC", "BC", "氢能", "展会", "发布"],
@@ -52,6 +57,7 @@ export const companySources: CompanySource[] = [
   },
   {
     company: "特隆美",
+    segment: "储能系统",
     sourceName: "特隆美官网",
     url: "https://www.tecloman.com/news",
     keywords: ["Smarter E", "SNEC", "储能", "展会", "慕尼黑"],
@@ -62,6 +68,7 @@ export const companySources: CompanySource[] = [
   },
   {
     company: "海辰储能",
+    segment: "储能电芯",
     sourceName: "海辰储能官网",
     url: "https://www.hithium.com/news",
     keywords: ["SNEC", "储能", "电芯", "展会", "发布"],
@@ -72,6 +79,7 @@ export const companySources: CompanySource[] = [
   },
   {
     company: "比亚迪储能",
+    segment: "储能系统",
     sourceName: "比亚迪官网",
     url: "https://www.byd.com/cn/news",
     keywords: ["储能", "欧洲", "ees", "展会", "发布"],
@@ -82,6 +90,7 @@ export const companySources: CompanySource[] = [
   },
   {
     company: "固德威",
+    segment: "逆变器",
     sourceName: "固德威官网",
     url: "https://en.goodwe.com/news",
     keywords: ["Intersolar", "欧洲", "逆变器", "展会", "户用"],
@@ -92,6 +101,7 @@ export const companySources: CompanySource[] = [
   },
   {
     company: "天合光能",
+    segment: "光伏组件",
     sourceName: "天合光能官网",
     url: "https://www.trinasolar.com/en-glb/resources/newsroom",
     keywords: ["RE+", "美国", "展会", "组件", "发布"],
@@ -102,6 +112,7 @@ export const companySources: CompanySource[] = [
   },
   {
     company: "古瑞瓦特",
+    segment: "逆变器",
     sourceName: "古瑞瓦特官网",
     url: "https://www.growatt.com/media/news",
     keywords: ["Africa", "Solar Show", "展会", "逆变器", "发布"],
@@ -112,6 +123,7 @@ export const companySources: CompanySource[] = [
   },
   {
     company: "锦浪科技",
+    segment: "逆变器",
     sourceName: "锦浪科技官网",
     url: "https://www.ginlong.com/news",
     keywords: ["South America", "Intersolar", "南美", "展会", "逆变器"],
@@ -119,5 +131,82 @@ export const companySources: CompanySource[] = [
     procurementKeywords: ["tender", "招标", "采购", "供应商"],
     expoKeywords: ["South America", "Intersolar", "南美", "展会", "逆变器"],
     preferredPathHints: ["news", "media", "press"],
+  },
+  {
+    company: "爱旭股份",
+    segment: "光伏组件/BC技术",
+    sourceName: "AIKO 官网",
+    url: "https://aikosolar.com/en/news/",
+    keywords: ["ABC", "展会", "Intersolar", "SNEC", "组件"],
+    matchers: ["爱旭", "aiko", "abc", "intersolar"],
+    procurementKeywords: ["招标", "采购", "供应商", "tender", "vendor"],
+    expoKeywords: ["ABC", "展会", "Intersolar", "SNEC", "组件"],
+    preferredPathHints: ["news", "press", "article"],
+  },
+  {
+    company: "华晟新能源",
+    segment: "异质结/薄膜化场景",
+    sourceName: "Huasun 官网",
+    url: "https://www.huasunsolar.com/news/",
+    keywords: ["HJT", "异质结", "招标", "展会", "组件"],
+    matchers: ["华晟", "huasun", "hjt", "招标"],
+    procurementKeywords: ["procurement", "招标", "中标", "采购", "shortlisted"],
+    expoKeywords: ["HJT", "异质结", "展会", "Intersolar", "SNEC"],
+    preferredPathHints: ["news", "article"],
+  },
+  {
+    company: "正泰新能",
+    segment: "光伏组件",
+    sourceName: "Astronergy 官网",
+    url: "https://www.astronergy.com/news/",
+    keywords: ["ASTRO", "展会", "Intersolar", "招标", "采购"],
+    matchers: ["astronergy", "正泰新能", "astro", "procurement"],
+    procurementKeywords: ["procurement", "招标", "采购", "中标", "框架"],
+    expoKeywords: ["Intersolar", "SNEC", "展会", "ASTRO", "exhibitor"],
+    preferredPathHints: ["news", "press"],
+  },
+  {
+    company: "阿特斯",
+    segment: "光伏组件/储能",
+    sourceName: "Canadian Solar IR",
+    url: "https://investors.canadiansolar.com/news-releases/",
+    keywords: ["storage", "module", "展会", "Intersolar", "project"],
+    matchers: ["canadian solar", "阿特斯", "e-storage", "recurrent"],
+    procurementKeywords: ["project", "agreement", "contract", "tender", "procurement"],
+    expoKeywords: ["Intersolar", "展会", "module", "storage", "project"],
+    preferredPathHints: ["news", "releases", "press"],
+  },
+  {
+    company: "一道新能",
+    segment: "光伏组件",
+    sourceName: "DAS Solar 官网",
+    url: "https://www.das-solar.com/en/site/news",
+    keywords: ["N-Type", "展会", "Intersolar", "组件", "DBC"],
+    matchers: ["das solar", "一道新能", "dbc", "n-type"],
+    procurementKeywords: ["招标", "采购", "tender", "procurement"],
+    expoKeywords: ["Intersolar", "SNEC", "展会", "组件", "DBC"],
+    preferredPathHints: ["news", "site", "exhibitions"],
+  },
+  {
+    company: "协鑫集成",
+    segment: "光伏组件/系统集成",
+    sourceName: "GCL SI 官网",
+    url: "https://en.gclsi.com/news_detail/",
+    keywords: ["Intersolar", "SNEC", "组件", "采购", "展会"],
+    matchers: ["gcl", "协鑫", "gcl si", "intersolar"],
+    procurementKeywords: ["采购", "招标", "procurement", "tender", "framework"],
+    expoKeywords: ["Intersolar", "SNEC", "展会", "组件", "module"],
+    preferredPathHints: ["news", "detail"],
+  },
+  {
+    company: "First Solar",
+    segment: "薄膜组件",
+    sourceName: "First Solar IR",
+    url: "https://investor.firstsolar.com/news/default.aspx",
+    keywords: ["thin film", "CdTe", "manufacturing", "展会", "module"],
+    matchers: ["first solar", "thin film", "cdte"],
+    procurementKeywords: ["contract", "agreement", "supply", "procurement"],
+    expoKeywords: ["module", "manufacturing", "thin film", "展会"],
+    preferredPathHints: ["news", "press", "release"],
   },
 ];
