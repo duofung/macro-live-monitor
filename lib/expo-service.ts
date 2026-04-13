@@ -1,4 +1,4 @@
-import { companySources } from "@/lib/expo-company-sources";
+import { companySources, type CompanySource } from "@/lib/expo-company-sources";
 import { fallbackExpoFeeds } from "@/lib/expo-data";
 import type { ExpoRadarPayload, FeedItem } from "@/lib/expo-types";
 
@@ -34,6 +34,8 @@ type LiveArticle = {
   source: string;
   sourceType: "官网" | "新闻聚合";
   company?: string;
+  score?: number;
+  evidence?: string;
 };
 
 const COMPANY_MATCHERS = fallbackExpoFeeds.map((feed) => ({
@@ -107,10 +109,37 @@ function normalizeArticles(articles: LiveArticle[]) {
     if (!article.url || unique.has(article.url)) continue;
     unique.set(article.url, article);
   }
-  return [...unique.values()].sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt));
+  return [...unique.values()].sort((a, b) => (b.score ?? 0) - (a.score ?? 0) || +new Date(b.publishedAt) - +new Date(a.publishedAt));
 }
 
-function extractOfficialArticlesFromHtml(baseUrl: string, sourceName: string, company: string, keywords: string[], html: string) {
+function countKeywordHits(text: string, keywords: string[] = []) {
+  return keywords.reduce((count, keyword) => count + (text.includes(keyword.toLowerCase()) ? 1 : 0), 0);
+}
+
+function buildEvidence(parts: Array<string | undefined | false>) {
+  return parts.filter(Boolean).join(" · ");
+}
+
+function scoreOfficialArticle(source: CompanySource, url: string, text: string, snippet: string) {
+  const combined = `${text} ${snippet}`.toLowerCase();
+  const procurementHits = countKeywordHits(combined, source.procurementKeywords);
+  const expoHits = countKeywordHits(combined, source.expoKeywords ?? source.keywords);
+  const matcherHits = countKeywordHits(combined, source.matchers);
+  const pathHits = countKeywordHits(url.toLowerCase(), source.preferredPathHints);
+  const score = procurementHits * 5 + expoHits * 3 + matcherHits * 2 + pathHits;
+
+  return {
+    score,
+    evidence: buildEvidence([
+      procurementHits > 0 ? `招采词 ${procurementHits}` : undefined,
+      expoHits > 0 ? `展会词 ${expoHits}` : undefined,
+      matcherHits > 0 ? `品牌词 ${matcherHits}` : undefined,
+      pathHits > 0 ? `栏目命中 ${pathHits}` : undefined,
+    ]),
+  };
+}
+
+function extractOfficialArticlesFromHtml(source: CompanySource, html: string) {
   const anchorPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
   const articles: LiveArticle[] = [];
   let match: RegExpExecArray | null;
@@ -121,20 +150,25 @@ function extractOfficialArticlesFromHtml(baseUrl: string, sourceName: string, co
     if (!href || text.length < 8 || text.length > 180) continue;
 
     const haystack = text.toLowerCase();
-    const keywordHit = keywords.some((keyword) => haystack.includes(keyword.toLowerCase()));
-    const companyHit = haystack.includes(company.toLowerCase());
+    const keywordHit = source.keywords.some((keyword) => haystack.includes(keyword.toLowerCase()));
+    const companyHit = haystack.includes(source.company.toLowerCase());
     if (!keywordHit && !companyHit) continue;
 
     const snippet = html.slice(Math.max(0, match.index - 180), Math.min(html.length, match.index + match[0].length + 180));
+    const cleanSnippet = stripHtml(snippet).slice(0, 220);
+    const url = absoluteUrl(source.url, href);
+    const { score, evidence } = scoreOfficialArticle(source, url, text, cleanSnippet);
 
     articles.push({
       title: text,
-      description: stripHtml(snippet).slice(0, 220),
+      description: cleanSnippet,
       publishedAt: inferDateFromSnippet(snippet),
-      url: absoluteUrl(baseUrl, href),
-      source: sourceName,
+      url,
+      source: source.sourceName,
       sourceType: "官网",
-      company,
+      company: source.company,
+      score,
+      evidence,
     });
   }
 
@@ -146,7 +180,7 @@ async function fetchCompanyOfficialArticles() {
     companySources.map(async (source) => {
       try {
         const html = await fetchText(source.url);
-        return extractOfficialArticlesFromHtml(source.url, source.sourceName, source.company, source.keywords, html);
+        return extractOfficialArticlesFromHtml(source, html);
       } catch {
         return [];
       }
@@ -178,6 +212,8 @@ async function fetchGNewsArticles() {
       url: article.url!,
       source: article.source?.name ?? "GNews",
       sourceType: "新闻聚合" as const,
+      score: 1,
+      evidence: "新闻聚合匹配",
     }));
 }
 
@@ -203,6 +239,8 @@ async function fetchNewsApiArticles() {
       url: article.url!,
       source: article.source?.name ?? "NewsAPI",
       sourceType: "新闻聚合" as const,
+      score: 1,
+      evidence: "新闻聚合匹配",
     }));
 }
 
@@ -218,9 +256,11 @@ function articleMatchesFeed(feed: FeedItem, article: LiveArticle) {
 }
 
 function matchArticleToFeed(feed: FeedItem, articles: LiveArticle[]) {
-  const officialHit = articles.find((article) => article.sourceType === "官网" && articleMatchesFeed(feed, article));
-  if (officialHit) return officialHit;
-  return articles.find((article) => articleMatchesFeed(feed, article)) ?? null;
+  return (
+    articles
+      .filter((article) => articleMatchesFeed(feed, article))
+      .sort((a, b) => (b.sourceType === "官网" ? 100 : 0) + (b.score ?? 0) - ((a.sourceType === "官网" ? 100 : 0) + (a.score ?? 0)))[0] ?? null
+  );
 }
 
 function inferUrgency(publishedAt: string, fallbackUrgency: FeedItem["urg"]) {
@@ -252,6 +292,7 @@ export async function getExpoRadarPayload(): Promise<ExpoRadarPayload> {
       liveHeadline: article.title,
       livePublishedAt: article.publishedAt,
       liveSourceType: article.sourceType,
+      liveEvidence: article.evidence,
     } satisfies FeedItem;
   });
 

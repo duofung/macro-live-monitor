@@ -541,7 +541,10 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
                         <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.5, minHeight: 64, marginBottom: 14 }}>{f.title}</div>
                         {f.liveHeadline ? (
                           <div style={{ marginBottom: 14, padding: "10px 12px", borderRadius: 12, background: "rgba(0,102,255,0.06)", border: "1px solid rgba(0,102,255,0.12)" }}>
-                            <div style={{ fontSize: 10, color: colors.accent, fontWeight: 700, letterSpacing: 0.3, marginBottom: 6 }}>实时资讯</div>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", marginBottom: 6 }}>
+                              <div style={{ fontSize: 10, color: colors.accent, fontWeight: 700, letterSpacing: 0.3 }}>实时资讯</div>
+                              {f.liveEvidence ? <div style={{ fontSize: 10, color: colors.muted }}>{f.liveEvidence}</div> : null}
+                            </div>
                             <div style={{ fontSize: 12, color: colors.sub, lineHeight: 1.6 }}>{f.liveHeadline}</div>
                           </div>
                         ) : null}
