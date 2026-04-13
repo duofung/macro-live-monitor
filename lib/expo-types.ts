@@ -23,6 +23,7 @@ export type FeedItem = {
   liveSourceType?: "官网" | "平台" | "新闻聚合";
   liveEvidence?: string;
   recordType?: "既有项目" | "全网线索";
+  confidence?: "高置信" | "中置信";
 };
 
 export type ExpoRadarPayload = {

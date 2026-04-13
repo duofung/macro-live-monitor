@@ -181,6 +181,10 @@ function inferLeadUrgency(publishedAt: string, score = 0): FeedItem["urg"] {
   return "upcoming";
 }
 
+function inferConfidence(score = 0): FeedItem["confidence"] {
+  return score >= 12 ? "高置信" : "中置信";
+}
+
 function deriveFollowupDeadline(publishedAt: string, urgency: FeedItem["urg"]) {
   const base = new Date(publishedAt);
   if (Number.isNaN(base.getTime())) return formatDateFromDate(new Date(Date.now() + 7 * 86400000));
@@ -472,6 +476,7 @@ export async function getExpoRadarPayload(): Promise<ExpoRadarPayload> {
         liveSourceType: article.sourceType,
         liveEvidence: article.evidence,
         recordType: "全网线索",
+        confidence: inferConfidence(article.score),
       } satisfies FeedItem;
     });
 

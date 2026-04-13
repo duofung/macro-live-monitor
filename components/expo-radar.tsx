@@ -581,6 +581,11 @@ export function ExpoRadar({ initialPayload }: { initialPayload?: ExpoRadarPayloa
                               全网线索
                             </span>
                           ) : null}
+                          {f.confidence ? (
+                            <span style={{ fontSize: 10, padding: "4px 8px", borderRadius: 999, background: f.confidence === "高置信" ? "#ECFDF5" : "#FFF7ED", color: f.confidence === "高置信" ? "#059669" : "#C2410C", fontWeight: 500 }}>
+                              {f.confidence}
+                            </span>
+                          ) : null}
                         </div>
 
                         <div style={{ marginTop: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
