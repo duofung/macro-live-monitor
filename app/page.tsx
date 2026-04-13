@@ -3,6 +3,8 @@ import { fallbackExpoFeeds } from "@/lib/expo-data";
 import { getExpoRadarPayload } from "@/lib/expo-service";
 import type { ExpoRadarPayload } from "@/lib/expo-types";
 
+export const dynamic = "force-dynamic";
+
 function getFallbackPayload(): ExpoRadarPayload {
   return {
     feeds: fallbackExpoFeeds,

@@ -94,7 +94,11 @@ function inferDateFromSnippet(snippet: string) {
 }
 
 async function fetchJson<T>(url: string, init?: RequestInit) {
-  const response = await fetch(url, { ...init, next: { revalidate: 900 } });
+  const response = await fetch(url, {
+    ...init,
+    signal: AbortSignal.timeout(8000),
+    next: { revalidate: 900 },
+  });
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
   return (await response.json()) as T;
 }
@@ -105,6 +109,7 @@ async function fetchText(url: string) {
       "user-agent": "Mozilla/5.0 (compatible; ExpoRadarBot/1.0; +https://vercel.app)",
       accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     },
+    signal: AbortSignal.timeout(8000),
     next: { revalidate: 900 },
   });
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
